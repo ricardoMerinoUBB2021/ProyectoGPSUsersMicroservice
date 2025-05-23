@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  users-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - API_PREFIX=/api/v1
+      # AWS RDS PostgreSQL connection
+      - DB_HOST=user-microservice.c30oi6iu44ez.us-east-2.rds.amazonaws.com
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=holahola
+      - DB_NAME=postgres
+      - JWT_SECRET=${JWT_SECRET:-changeThisSecretInProduction}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-24h}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET:-anotherSecretToChange}
+      - REFRESH_TOKEN_EXPIRATION=${REFRESH_TOKEN_EXPIRATION:-7d}
+    restart: unless-stopped
+    # We don't need postgres service since we're using AWS RDS
+    # But keep the volume definition for potential local development
+
+volumes:
+  postgres_data: 
