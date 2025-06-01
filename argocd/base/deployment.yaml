@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: users-microservice
-          image: ghcr.io/ricardoMerinoUBB2021/ProyectoGPSUsersMicroservice:latest # <-- update as needed
+          image: ghcr.io/ricardoMerinoUBB2021/ProyectoGPSUsersMicroservice:latest
           ports:
             - containerPort: 3001
           env:
