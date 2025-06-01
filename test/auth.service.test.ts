@@ -22,20 +22,30 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should return user info on valid login', async () => {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
       const user = {
         id: '1',
+        rut: '12345678-9',
+        nombres: 'Test',
+        apellidos: 'User',
+        fechaNacimiento: '2000-01-01',
         tipo: 'admin',
-        permisos: ['read'],
         credenciales: {
-          username: 'test',
-          passwordHash: 'hash',
-          bloqueado: false,
+          username: 'admin',
+          passwordHash: hashedPassword,
+          ultimoAcceso: new Date().toISOString(),
           intentosFallidos: 0,
+          bloqueado: false
         },
+        permisos: [],
+        beneficiarios: [],
+        roles: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
       } as unknown as Usuario;
       mockRepository.find.mockResolvedValue([user]);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      const result = await authService.login('test', 'password');
+      const result = await authService.login('admin', 'admin123');
       expect(result).toHaveProperty('user');
       expect(result?.user).toHaveProperty('id', '1');
     });
@@ -67,7 +77,20 @@ describe('AuthService', () => {
 
   describe('getUserProfile', () => {
     it('should return user profile if found', async () => {
-      const user = { id: '1', credenciales: {}, tipo: 'admin' } as Usuario;
+      const user = {
+        id: '1',
+        rut: '12345678-9',
+        nombres: 'Test',
+        apellidos: 'User',
+        fechaNacimiento: '2000-01-01',
+        tipo: 'admin',
+        credenciales: {},
+        permisos: [],
+        beneficiarios: [],
+        roles: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as Usuario;
       mockRepository.findOneBy.mockResolvedValue(user);
       const result = await authService.getUserProfile('1');
       expect(result).toHaveProperty('id', '1');
