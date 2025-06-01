@@ -3,8 +3,7 @@
 # This script updates the ECS task definition with the latest image tag and registers a new task definition
 
 # Required environment variables
-# ECR_REPOSITORY - The ECR repository URL
-# IMAGE_TAG - The image tag to use
+# CONTAINER_IMAGE - The full container image URL including registry, repository, and tag
 # AWS_REGION - The AWS region
 # ECS_TASK_FAMILY - The ECS task definition family name
 # AWS_ACCOUNT_ID - The AWS account ID
@@ -17,7 +16,7 @@ TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $ECS_TASK_F
 
 # Create a new task definition file with the updated image
 echo $TASK_DEFINITION \
-  | jq --arg IMAGE "$ECR_REPOSITORY:$IMAGE_TAG" \
+  | jq --arg IMAGE "$CONTAINER_IMAGE" \
      '.taskDefinition | .containerDefinitions[0].image = $IMAGE | {containerDefinitions: .containerDefinitions, family: .family, executionRoleArn: .executionRoleArn, networkMode: .networkMode, volumes: .volumes, placementConstraints: .placementConstraints, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}' \
   > new-task-definition.json
 

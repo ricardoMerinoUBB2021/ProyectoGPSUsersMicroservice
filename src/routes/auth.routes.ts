@@ -18,18 +18,9 @@ export class AuthRoutes {
     // Public route for authentication
     this.router.post('/login', this.authController.login);
 
-    // Protected routes
-    this.router.get(
-      '/perfil',
-      this.authMiddleware.verifyToken,
-      this.authController.getProfile
-    );
-
-    this.router.post(
-      '/cambiar-clave',
-      this.authMiddleware.verifyToken,
-      this.authController.changePassword
-    );
+    // Public routes (no JWT verification)
+    this.router.get('/perfil', this.authController.getProfile);
+    this.router.post('/cambiar-clave', this.authController.changePassword);
   }
 
   public getRouter(): Router {

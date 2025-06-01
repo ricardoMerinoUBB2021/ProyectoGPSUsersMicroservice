@@ -48,13 +48,13 @@ export class AuthController {
   // Get current user profile
   getProfile = async (req: Request, res: Response): Promise<void> => {
     try {
-      // User ID should be available from the auth middleware
-      const userId = req.user?.id;
+      // User ID should be provided in the request body
+      const { userId } = req.body;
       
       if (!userId) {
-        res.status(401).json({
+        res.status(400).json({
           status: 'error',
-          message: 'Usuario no autenticado'
+          message: 'Se requiere el ID de usuario'
         });
         return;
       }
@@ -85,13 +85,12 @@ export class AuthController {
   // Change password
   changePassword = async (req: Request, res: Response): Promise<void> => {
     try {
-      const userId = req.user?.id;
-      const { currentPassword, newPassword } = req.body;
+      const { userId, currentPassword, newPassword } = req.body;
       
       if (!userId) {
-        res.status(401).json({
+        res.status(400).json({
           status: 'error',
-          message: 'Usuario no autenticado'
+          message: 'Se requiere el ID de usuario'
         });
         return;
       }

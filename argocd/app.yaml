@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: users-microservice
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/ricardoMerinoUBB2021/ProyectoGPSUsersMicroservice.git' # <-- update this
+    targetRevision: HEAD
+    path: argocd/overlays/prod
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: users-microservice
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true 

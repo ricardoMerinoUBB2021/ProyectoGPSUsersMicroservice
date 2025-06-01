@@ -2,18 +2,12 @@ import { Repository, Like, Equal } from 'typeorm';
 import AppDataSource from '../config/data-source';
 import { Usuario } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { SignOptions, Secret } from 'jsonwebtoken';
 
 export class AuthService {
     private userRepository: Repository<Usuario>;
-    private JWT_SECRET: Secret;
-    private JWT_EXPIRATION: string;
 
     constructor() {
         this.userRepository = AppDataSource.getRepository(Usuario);
-        this.JWT_SECRET = process.env.JWT_SECRET || 'default_secret_change_in_production';
-        this.JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
     }
 
     public async register(userData: any): Promise<any> {
@@ -21,7 +15,7 @@ export class AuthService {
         // Validate user data, hash password, and save to database
     }
 
-    async login(username: string, password: string): Promise<{ token: string, user: Partial<Usuario> } | null> {
+    async login(username: string, password: string): Promise<{ user: Partial<Usuario> } | null> {
         // Find user by username - using raw queries for JSON fields in SQLite
         // First get all active users
         const users = await this.userRepository.find({
@@ -63,35 +57,12 @@ export class AuthService {
         user.credenciales.ultimoAcceso = new Date().toISOString();
         await this.userRepository.save(user);
 
-        // Generate JWT token
-        const payload = { 
-            id: user.id,
-            tipo: user.tipo,
-            permisos: user.permisos
-        };
-        
-        const options: SignOptions = { 
-            expiresIn: Number(this.JWT_EXPIRATION) 
-        };
-        
-        const token = jwt.sign(payload, this.JWT_SECRET, options);
-
         // Return user info without sensitive data
         const { credenciales, ...userWithoutCredentials } = user;
         
         return {
-            token,
             user: userWithoutCredentials
         };
-    }
-
-    async validateToken(token: string): Promise<any> {
-        try {
-            const decoded = jwt.verify(token, this.JWT_SECRET);
-            return decoded;
-        } catch (error) {
-            return null;
-        }
     }
 
     async getUserProfile(userId: string): Promise<Partial<Usuario> | null> {

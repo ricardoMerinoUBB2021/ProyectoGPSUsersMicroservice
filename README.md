@@ -232,97 +232,76 @@ El sistema implementará una matriz dinámica de privilegios que el Administrado
 
 # Users Microservice
 
-A microservice for managing users in a pharmacy management system.
+This service handles user management functionality for the application.
 
-## Setup Instructions
+## Deployment Pipeline
 
-### Prerequisites
+The microservice uses a clear separation of concerns between CI (Continuous Integration) and CD (Continuous Deployment):
 
-- Node.js (v14 or higher)
-- PostgreSQL (v12 or higher)
-- npm or yarn
+### CI Pipeline (GitHub Actions)
 
-### Database Setup
+The GitHub Actions workflow handles:
+- Building and testing the application code
+- Building the Docker image
+- Pushing the image to GitHub Container Registry (ghcr.io)
+- Triggering the CD pipeline in Jenkins
 
-1. Install PostgreSQL if you haven't already:
-   - For Windows: Download and install from [PostgreSQL website](https://www.postgresql.org/download/windows/)
-   - For macOS: `brew install postgresql`
-   - For Ubuntu/Debian: `sudo apt-get update && sudo apt-get install postgresql postgresql-contrib`
+The workflow is triggered when:
+- Code is pushed to the `main` branch
+- A new release is published
+- The workflow is manually triggered
 
-2. Create a PostgreSQL database:
-   ```bash
-   sudo -u postgres psql
-   CREATE DATABASE users_microservice;
-   CREATE USER your_username WITH ENCRYPTED PASSWORD 'your_password';
-   GRANT ALL PRIVILEGES ON DATABASE users_microservice TO your_username;
-   \q
-   ```
+Images are tagged with:
+- `latest` for the default branch
+- Semantic version tags when releases are published
 
-3. Configure environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   Then edit the `.env` file with your PostgreSQL credentials.
+### CD Pipeline (Jenkins)
 
-### Installation
+The Jenkins pipeline focuses exclusively on deployment to an EC2 instance:
+1. Pulls the pre-built Docker image from GitHub Packages on the EC2 instance
+2. Stops and removes any existing container with the same name
+3. Runs the new container with appropriate port mappings
+4. Verifies the container is running successfully
+5. Cleans up old Docker images to free up disk space
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+This approach:
+- Deploys directly to an existing EC2 instance via SSH
+- Ensures zero downtime by properly handling container replacement
+- Maintains a clean environment by removing outdated images
+- Provides immediate verification of deployment success
 
-2. Initialize the database with test data:
-   ```bash
-   npm run init:db
-   ```
-   
-   Alternatively, you can run the SQL script directly with psql:
-   ```bash
-   npm run init:db:postgres
-   ```
+## Required Jenkins Credentials
 
-### Running the Service
+The following credentials must be configured in Jenkins:
+- `GITHUB_TOKEN` - GitHub Personal Access Token with packages read permissions
+- `GITHUB_USERNAME` - GitHub username
+- `GITHUB_REPO` - GitHub repository name
+- `EC2_HOST` - Hostname or IP address of the EC2 instance
+- `EC2_USER` - SSH username for the EC2 instance
+- `EC2_SSH_KEY` - SSH private key for accessing the EC2 instance
 
-1. Start the service in development mode:
-   ```bash
-   npm run dev
-   ```
+## Local Development
 
-2. For production:
-   ```bash
-   npm run build
-   npm start
-   ```
+```bash
+# Install dependencies
+npm install
 
-## API Endpoints
+# Run tests
+npm test
 
-### Authentication
-- `POST /api/v1/auth/login` - User login
-- `POST /api/v1/auth/refresh` - Refresh token
-- `POST /api/v1/auth/logout` - User logout
+# Start the service
+npm start
+```
 
-### Users
-- `GET /api/v1/users` - Get all users
-- `GET /api/v1/users/:id` - Get user by ID
-- `POST /api/v1/users` - Create new user
-- `PUT /api/v1/users/:id` - Update user
-- `DELETE /api/v1/users/:id` - Delete user
+## Docker
 
-### Beneficiaries
-- `GET /api/v1/beneficiaries` - Get all beneficiaries
-- `GET /api/v1/beneficiaries/:id` - Get beneficiary by ID
-- `POST /api/v1/beneficiaries` - Create new beneficiary
-- `PUT /api/v1/beneficiaries/:id` - Update beneficiary
-- `DELETE /api/v1/beneficiaries/:id` - Delete beneficiary
+```bash
+# Build the image
+docker build -t users-microservice .
 
-## Database Schema
-
-The service uses the following main entities:
-
-- **Usuario**: Base user entity containing common user information
-- **Beneficiario**: Extends Usuario with beneficiary-specific information
-- **Rol**: Defines user roles in the system
-- **Permiso**: Defines permissions that can be assigned to users and roles
+# Run the container
+docker run -p 3001:3001 users-microservice
+```
 
 ## Environment Configuration
 
