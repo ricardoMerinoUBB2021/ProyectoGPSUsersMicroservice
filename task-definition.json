@@ -9,14 +9,14 @@
       "essential": true,
       "portMappings": [
         {
-          "containerPort": 3001,
-          "hostPort": 3001,
+          "containerPort": 3002,
+          "hostPort": 3002,
           "protocol": "tcp"
         }
       ],
       "environment": [
         { "name": "NODE_ENV", "value": "production" },
-        { "name": "PORT", "value": "3001" },
+        { "name": "PORT", "value": "3002" },
         { "name": "API_PREFIX", "value": "/api/v1" },
         { "name": "DB_HOST", "value": "YOUR_RDS_ENDPOINT" },
         { "name": "DB_PORT", "value": "5432" }
@@ -37,7 +37,7 @@
         }
       },
       "healthCheck": {
-        "command": ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"],
+        "command": ["CMD-SHELL", "curl -f http://localhost:3002/health || exit 1"],
         "interval": 30,
         "timeout": 5,
         "retries": 3,

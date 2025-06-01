@@ -19,7 +19,7 @@ COPY . .
 RUN npm run build
 
 # Expose the service port
-EXPOSE 3001
+EXPOSE 3002
 
 # Define environment variable
 ENV NODE_ENV=production

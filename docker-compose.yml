@@ -6,10 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3001:3001"
+      - "3002:3002"
     environment:
       - NODE_ENV=development
-      - PORT=3001
+      - PORT=3002
       - API_PREFIX=/api/v1
       # AWS RDS PostgreSQL connection
       - DB_HOST=user-microservice.c30oi6iu44ez.us-east-2.rds.amazonaws.com

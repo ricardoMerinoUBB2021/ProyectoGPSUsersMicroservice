@@ -300,7 +300,7 @@ npm start
 docker build -t users-microservice .
 
 # Run the container
-docker run -p 3001:3001 users-microservice
+docker run -p 3002:3002 users-microservice
 ```
 
 ## Environment Configuration
@@ -308,7 +308,7 @@ docker run -p 3001:3001 users-microservice
 | Variable               | Description                                    | Default Value         |
 |------------------------|------------------------------------------------|-----------------------|
 | NODE_ENV               | Environment (development, production, test)    | development           |
-| PORT                   | Port number for the service                    | 3001                  |
+| PORT                   | Port number for the service                    | 3002                  |
 | API_PREFIX             | API route prefix                               | /api/v1               |
 | DB_HOST                | PostgreSQL host                                | localhost             |
 | DB_PORT                | PostgreSQL port                                | 5432                  |
