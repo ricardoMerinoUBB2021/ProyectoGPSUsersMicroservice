@@ -3,8 +3,8 @@ name: CI - Build, Test and Publish Docker Image
 on:
   push:
     branches: [ "main" ]
-  release:
-    types: [published]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:  # Allow manual triggers
 
 env:
@@ -58,4 +58,4 @@ jobs:
           context: ./backend/services/users-microservice
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: ${{ steps.meta.outputs.labels }} 
