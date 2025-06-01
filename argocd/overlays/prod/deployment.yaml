@@ -28,7 +28,10 @@ spec:
             - name: API_PREFIX
               value: "/api/v1"
             - name: DB_HOST
-              value: "<DB_HOST>" # <-- update for your environment
+              valueFrom:
+                secretKeyRef:
+                  name: users-microservice-secrets
+                  key: DB_HOST
             - name: DB_PORT
               value: "5432"
             - name: DB_USER
