@@ -1,6 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: ghcr.io/ricardomerinoubb2021/proyectogpsusersmicroservice/users-microservice
+    argocd-image-updater.argoproj.io/write-back-method: https://github.com/ricardoMerinoUBB2021/ProyectoGPSUsersMicroservice.git
   name: users-microservice
   namespace: users-microservice
   labels:
