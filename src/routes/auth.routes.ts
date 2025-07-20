@@ -15,12 +15,19 @@ export class AuthRoutes {
   }
 
   private initializeRoutes(): void {
-    // Public route for authentication
+    // Public routes for authentication (no JWT required)
     this.router.post('/login', this.authController.login);
+    this.router.post('/register', this.authController.register);
 
-    // Public routes (no JWT verification)
-    this.router.get('/perfil', this.authController.getProfile);
-    this.router.post('/cambiar-clave', this.authController.changePassword);
+    // Protected routes (require JWT verification)
+    this.router.get('/perfil', 
+      this.authMiddleware.verifyToken,
+      this.authController.getProfile
+    );
+    this.router.post('/cambiar-clave', 
+      this.authMiddleware.verifyToken,
+      this.authController.changePassword
+    );
   }
 
   public getRouter(): Router {

@@ -1,30 +1,59 @@
-# Postman Collection - Users Microservice API
-
-This document contains all the API endpoints for testing the Users Microservice. You can import these requests into Postman or use them as a reference for testing.
+# Postman Collection for Users Microservice
 
 ## Base URL
 ```
-http://localhost:3002
+http://localhost:3002/api
 ```
 
-## Environment Variables
-Set up these environment variables in Postman:
-- `baseUrl`: `http://localhost:3002`
-- `authToken`: (will be set after login)
-
----
-
-## 1. Authentication Endpoints
-
-### 1.1 Login User
-**POST** `{{baseUrl}}/api/auth/login`
-
-**Headers:**
+## Authentication
+Most endpoints require authentication via JWT token in the Authorization header:
 ```
-Content-Type: application/json
+Authorization: Bearer <your-jwt-token>
 ```
 
-**Body (raw JSON):**
+## Public Endpoints (No Authentication Required)
+
+### 1. User Registration
+**POST** `/auth/register`
+
+Create a new user account (no authentication required).
+
+**Request Body:**
+```json
+{
+  "username": "newuser",
+  "credentials": "password123"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "status": "success",
+  "message": "Usuario registrado exitosamente",
+  "data": {
+    "user": {
+      "userId": 1,
+      "username": "newuser"
+    }
+  }
+}
+```
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "status": "error",
+  "message": "Se requiere nombre de usuario y contraseña"
+}
+```
+
+### 2. User Login
+**POST** `/auth/login`
+
+Authenticate user and get access token.
+
+**Request Body:**
 ```json
 {
   "username": "admin",
@@ -32,10 +61,11 @@ Content-Type: application/json
 }
 ```
 
-**Expected Response (200):**
+**Response (200 OK):**
 ```json
 {
   "status": "success",
+  "message": "Inicio de sesión exitoso",
   "data": {
     "user": {
       "userId": 1,
@@ -44,10 +74,12 @@ Content-Type: application/json
         {
           "roleId": 1,
           "roleName": "ADMIN",
+          "description": "Administrator with full access",
           "permissions": [
             {
               "permissionsId": 1,
-              "permissionName": "user:read"
+              "permissionName": "user:read",
+              "description": "Read user information"
             }
           ]
         }
@@ -58,79 +90,87 @@ Content-Type: application/json
 }
 ```
 
-**Test Script:**
-```javascript
-if (pm.response.code === 200) {
-    const response = pm.response.json();
-    if (response.data && response.data.user) {
-        pm.environment.set("authToken", "Bearer " + response.data.user.userId);
-    }
+**Error Response (401 Unauthorized):**
+```json
+{
+  "status": "error",
+  "message": "Usuario o contraseña incorrectos"
 }
 ```
 
-### 1.2 Get User Profile
-**GET** `{{baseUrl}}/api/auth/perfil`
+## Protected Endpoints (Authentication Required)
+
+### 3. Get User Profile
+**GET** `/auth/perfil`
+
+Get current user profile information.
 
 **Headers:**
 ```
-Authorization: {{authToken}}
-Content-Type: application/json
+Authorization: Bearer <jwt-token>
 ```
 
-**Expected Response (200):**
+**Request Body:**
+```json
+{
+  "userId": 1
+}
+```
+
+**Response (200 OK):**
 ```json
 {
   "status": "success",
   "data": {
-    "user": {
+    "profile": {
       "userId": 1,
       "username": "admin",
       "roles": [...],
-      "beneficiary": null
+      "beneficiary": {...}
     }
   }
 }
 ```
 
-### 1.3 Change Password
-**POST** `{{baseUrl}}/api/auth/cambiar-clave`
+### 4. Change Password
+**POST** `/auth/cambiar-clave`
+
+Change user password.
 
 **Headers:**
 ```
-Authorization: {{authToken}}
-Content-Type: application/json
+Authorization: Bearer <jwt-token>
 ```
 
-**Body (raw JSON):**
+**Request Body:**
 ```json
 {
-  "currentPassword": "admin123",
-  "newPassword": "newpassword123"
+  "userId": 1,
+  "currentPassword": "oldpassword",
+  "newPassword": "newpassword"
 }
 ```
 
-**Expected Response (200):**
+**Response (200 OK):**
 ```json
 {
   "status": "success",
-  "message": "Contraseña cambiada exitosamente"
+  "message": "Contraseña actualizada exitosamente"
 }
 ```
 
----
+## User Management Endpoints
 
-## 2. User Management Endpoints
+### 5. Get All Users (Public - No Auth Required)
+**GET** `/usuarios?page=1&limit=10`
 
-### 2.1 Get All Users (Paginated)
-**GET** `{{baseUrl}}/api/usuarios?page=1&limit=10`
+Get paginated list of users.
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 10)
 
-**Expected Response (200):**
+**Response (200 OK):**
 ```json
 {
   "status": "success",
@@ -140,7 +180,7 @@ Content-Type: application/json
         "userId": 1,
         "username": "admin",
         "roles": [...],
-        "beneficiary": null
+        "beneficiary": {...}
       }
     ],
     "pagination": {
@@ -153,16 +193,12 @@ Content-Type: application/json
 }
 ```
 
-### 2.2 Get User by ID
-**GET** `{{baseUrl}}/api/usuarios/1`
+### 6. Get User by ID (Public - No Auth Required)
+**GET** `/usuarios/:id`
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
+Get specific user by ID.
 
-**Expected Response (200):**
+**Response (200 OK):**
 ```json
 {
   "status": "success",
@@ -171,22 +207,18 @@ Content-Type: application/json
       "userId": 1,
       "username": "admin",
       "roles": [...],
-      "beneficiary": null
+      "beneficiary": {...}
     }
   }
 }
 ```
 
-### 2.3 Create New User
-**POST** `{{baseUrl}}/api/usuarios`
+### 7. Create User (Public - No Auth Required)
+**POST** `/usuarios`
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
+Create a new user.
 
-**Body (raw JSON):**
+**Request Body:**
 ```json
 {
   "username": "newuser",
@@ -194,7 +226,7 @@ Content-Type: application/json
 }
 ```
 
-**Expected Response (201):**
+**Response (201 Created):**
 ```json
 {
   "status": "success",
@@ -203,55 +235,47 @@ Content-Type: application/json
     "user": {
       "userId": 2,
       "username": "newuser",
-      "credentials": "hashedPassword",
-      "salt": "salt123"
+      "roles": [],
+      "beneficiary": null
     }
   }
 }
 ```
 
-### 2.4 Update User
-**PUT** `{{baseUrl}}/api/usuarios/2`
+### 8. Update User (Public - No Auth Required)
+**PUT** `/usuarios/:id`
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
+Update existing user.
 
-**Body (raw JSON):**
+**Request Body:**
 ```json
 {
   "username": "updateduser"
 }
 ```
 
-**Expected Response (200):**
+**Response (200 OK):**
 ```json
 {
   "status": "success",
   "message": "Usuario actualizado exitosamente",
   "data": {
     "user": {
-      "userId": 2,
+      "userId": 1,
       "username": "updateduser",
-      "credentials": "hashedPassword",
-      "salt": "salt123"
+      "roles": [...],
+      "beneficiary": {...}
     }
   }
 }
 ```
 
-### 2.5 Delete User
-**DELETE** `{{baseUrl}}/api/usuarios/2`
+### 9. Delete User (Public - No Auth Required)
+**DELETE** `/usuarios/:id`
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
+Delete user by ID.
 
-**Expected Response (200):**
+**Response (200 OK):**
 ```json
 {
   "status": "success",
@@ -259,20 +283,50 @@ Content-Type: application/json
 }
 ```
 
----
+## Beneficiary Management
 
-## 3. Role Management Endpoints
+### 10. Create Beneficiary (Public - No Auth Required)
+**POST** `/beneficiarios`
 
-### 3.1 Get All Roles
-**GET** `{{baseUrl}}/api/roles`
+Create a new beneficiary with associated user.
 
-**Headers:**
+**Request Body:**
+```json
+{
+  "username": "beneficiary",
+  "credentials": "password123",
+  "discountCategory": "GENERAL",
+  "discount": 0.1
+}
 ```
-Authorization: {{authToken}}
-Content-Type: application/json
+
+**Response (201 Created):**
+```json
+{
+  "status": "success",
+  "message": "Beneficiario creado exitosamente",
+  "data": {
+    "beneficiary": {
+      "beneficiaryId": 1,
+      "discountCategory": "GENERAL",
+      "discount": 0.1,
+      "user": {
+        "userId": 2,
+        "username": "beneficiary"
+      }
+    }
+  }
+}
 ```
 
-**Expected Response (200):**
+## Role Management
+
+### 11. Get All Roles (Public - No Auth Required)
+**GET** `/roles`
+
+Get all available roles.
+
+**Response (200 OK):**
 ```json
 {
   "status": "success",
@@ -283,118 +337,75 @@ Content-Type: application/json
         "roleName": "ADMIN",
         "description": "Administrator with full access",
         "permissions": [...]
-      },
-      {
-        "roleId": 2,
-        "roleName": "FARMACEUTICO",
-        "description": "Pharmacist with limited access",
-        "permissions": [...]
       }
     ]
   }
 }
 ```
 
-### 3.2 Get Role by ID
-**GET** `{{baseUrl}}/api/roles/1`
+### 12. Create Role (Public - No Auth Required)
+**POST** `/roles`
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
+Create a new role.
 
-**Expected Response (200):**
+**Request Body:**
 ```json
 {
-  "status": "success",
-  "data": {
-    "role": {
-      "roleId": 1,
-      "roleName": "ADMIN",
-      "description": "Administrator with full access",
-      "permissions": [...]
-    }
-  }
+  "roleName": "NEW_ROLE",
+  "description": "New role description"
 }
 ```
 
-### 3.3 Create New Role
-**POST** `{{baseUrl}}/api/roles`
-
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
-
-**Body (raw JSON):**
-```json
-{
-  "roleName": "MODERATOR",
-  "description": "Moderator with limited admin access"
-}
-```
-
-**Expected Response (201):**
+**Response (201 Created):**
 ```json
 {
   "status": "success",
   "message": "Rol creado exitosamente",
   "data": {
     "role": {
-      "roleId": 3,
-      "roleName": "MODERATOR",
-      "description": "Moderator with limited admin access",
+      "roleId": 2,
+      "roleName": "NEW_ROLE",
+      "description": "New role description",
       "permissions": []
     }
   }
 }
 ```
 
-### 3.4 Update Role
-**PUT** `{{baseUrl}}/api/roles/3`
+### 13. Update Role (Public - No Auth Required)
+**PUT** `/roles/:id`
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
+Update existing role.
 
-**Body (raw JSON):**
+**Request Body:**
 ```json
 {
-  "roleName": "SENIOR_MODERATOR",
-  "description": "Senior moderator with extended access"
+  "roleName": "UPDATED_ROLE"
 }
 ```
 
-**Expected Response (200):**
+**Response (200 OK):**
 ```json
 {
   "status": "success",
   "message": "Rol actualizado exitosamente",
   "data": {
     "role": {
-      "roleId": 3,
-      "roleName": "SENIOR_MODERATOR",
-      "description": "Senior moderator with extended access",
+      "roleId": 1,
+      "roleName": "UPDATED_ROLE",
+      "description": "Updated role description",
       "permissions": []
     }
   }
 }
 ```
 
-### 3.5 Delete Role
-**DELETE** `{{baseUrl}}/api/roles/3`
+### 14. Delete Role (Public - No Auth Required)
+**DELETE** `/roles/:id`
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
+Delete role by ID.
 
-**Expected Response (200):**
+**Response (200 OK):**
 ```json
 {
   "status": "success",
@@ -402,20 +413,14 @@ Content-Type: application/json
 }
 ```
 
----
+## Permission Management
 
-## 4. Permission Management Endpoints
+### 15. Get All Permissions (Public - No Auth Required)
+**GET** `/permisos`
 
-### 4.1 Get All Permissions
-**GET** `{{baseUrl}}/api/permissions`
+Get all available permissions.
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
-
-**Expected Response (200):**
+**Response (200 OK):**
 ```json
 {
   "status": "success",
@@ -425,177 +430,25 @@ Content-Type: application/json
         "permissionsId": 1,
         "permissionName": "user:read",
         "description": "Read user information"
-      },
-      {
-        "permissionsId": 2,
-        "permissionName": "user:write",
-        "description": "Create and update users"
       }
     ]
   }
 }
 ```
 
-### 4.2 Get Permission by ID
-**GET** `{{baseUrl}}/api/permissions/1`
+## Error Responses
 
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
+### Common Error Formats
 
-**Expected Response (200):**
-```json
-{
-  "status": "success",
-  "data": {
-    "permission": {
-      "permissionsId": 1,
-      "permissionName": "user:read",
-      "description": "Read user information"
-    }
-  }
-}
-```
-
-### 4.3 Create New Permission
-**POST** `{{baseUrl}}/api/permissions`
-
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
-
-**Body (raw JSON):**
-```json
-{
-  "permissionName": "user:export",
-  "description": "Export user data to CSV"
-}
-```
-
-**Expected Response (201):**
-```json
-{
-  "status": "success",
-  "message": "Permiso creado exitosamente",
-  "data": {
-    "permission": {
-      "permissionsId": 11,
-      "permissionName": "user:export",
-      "description": "Export user data to CSV"
-    }
-  }
-}
-```
-
-### 4.4 Update Permission
-**PUT** `{{baseUrl}}/api/permissions/11`
-
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
-
-**Body (raw JSON):**
-```json
-{
-  "permissionName": "user:export_csv",
-  "description": "Export user data to CSV format"
-}
-```
-
-**Expected Response (200):**
-```json
-{
-  "status": "success",
-  "message": "Permiso actualizado exitosamente",
-  "data": {
-    "permission": {
-      "permissionsId": 11,
-      "permissionName": "user:export_csv",
-      "description": "Export user data to CSV format"
-    }
-  }
-}
-```
-
-### 4.5 Delete Permission
-**DELETE** `{{baseUrl}}/api/permissions/11`
-
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
-
-**Expected Response (200):**
-```json
-{
-  "status": "success",
-  "message": "Permiso eliminado exitosamente"
-}
-```
-
----
-
-## 5. Beneficiary Management Endpoints
-
-### 5.1 Create Beneficiary
-**POST** `{{baseUrl}}/api/beneficiarios`
-
-**Headers:**
-```
-Authorization: {{authToken}}
-Content-Type: application/json
-```
-
-**Body (raw JSON):**
-```json
-{
-  "username": "beneficiary1",
-  "credentials": "password123",
-  "discountCategory": "GENERAL",
-  "discount": 0.15
-}
-```
-
-**Expected Response (201):**
-```json
-{
-  "status": "success",
-  "message": "Beneficiario creado exitosamente",
-  "data": {
-    "beneficiary": {
-      "beneficiaryId": 1,
-      "discountCategory": "GENERAL",
-      "discount": 0.15,
-      "user": {
-        "userId": 3,
-        "username": "beneficiary1"
-      }
-    }
-  }
-}
-```
-
----
-
-## 6. Error Response Examples
-
-### 6.1 400 Bad Request
+**400 Bad Request:**
 ```json
 {
   "status": "error",
-  "message": "Error al crear usuario",
-  "error": "Username already exists"
+  "message": "Error description"
 }
 ```
 
-### 6.2 401 Unauthorized
+**401 Unauthorized:**
 ```json
 {
   "status": "error",
@@ -603,7 +456,7 @@ Content-Type: application/json
 }
 ```
 
-### 6.3 403 Forbidden
+**403 Forbidden:**
 ```json
 {
   "status": "error",
@@ -611,7 +464,7 @@ Content-Type: application/json
 }
 ```
 
-### 6.4 404 Not Found
+**404 Not Found:**
 ```json
 {
   "status": "error",
@@ -619,92 +472,44 @@ Content-Type: application/json
 }
 ```
 
-### 6.5 500 Internal Server Error
+**500 Internal Server Error:**
 ```json
 {
   "status": "error",
-  "message": "Error interno del servidor",
-  "error": "Database connection failed"
+  "message": "Error en el servidor",
+  "error": "Detailed error message"
 }
 ```
 
----
+## Testing Scenarios
 
-## 7. Testing Scenarios
+### 1. User Registration Flow
+1. Register new user: `POST /auth/register`
+2. Login with credentials: `POST /auth/login`
+3. Get user profile: `GET /auth/perfil`
 
-### 7.1 Complete User Workflow
-1. **Login** with admin credentials
-2. **Create** a new user
-3. **Get** the created user by ID
-4. **Update** the user information
-5. **Delete** the user
+### 2. User Management Flow
+1. Create user: `POST /usuarios`
+2. Get all users: `GET /usuarios`
+3. Get specific user: `GET /usuarios/:id`
+4. Update user: `PUT /usuarios/:id`
+5. Delete user: `DELETE /usuarios/:id`
 
-### 7.2 Role and Permission Workflow
-1. **Create** a new permission
-2. **Create** a new role
-3. **Assign** permission to role (via database or additional endpoint)
-4. **Create** user with the new role
-5. **Verify** user has the assigned permissions
+### 3. Beneficiary Management Flow
+1. Create beneficiary: `POST /beneficiarios`
+2. Verify user and beneficiary creation
 
-### 7.3 Beneficiary Workflow
-1. **Create** a beneficiary with user account
-2. **Verify** the beneficiary has discount information
-3. **Test** beneficiary-specific functionality
+### 4. Role and Permission Management Flow
+1. Get all roles: `GET /roles`
+2. Create new role: `POST /roles`
+3. Update role: `PUT /roles/:id`
+4. Delete role: `DELETE /roles/:id`
+5. Get all permissions: `GET /permisos`
 
-### 7.4 Error Handling
-1. **Test** invalid login credentials
-2. **Test** accessing protected endpoints without token
-3. **Test** accessing non-existent resources
-4. **Test** invalid request data
+## Notes
 
----
-
-## 8. Postman Collection Import
-
-To import this collection into Postman:
-
-1. Create a new collection in Postman
-2. Set up environment variables:
-   - `baseUrl`: `http://localhost:3002`
-   - `authToken`: (will be set automatically after login)
-3. Create requests for each endpoint above
-4. Use the test scripts provided to automatically set the auth token
-5. Run the collection to test all endpoints
-
----
-
-## 9. Performance Testing
-
-### 9.1 Load Testing Scenarios
-- **Concurrent Users**: Test with 10, 50, 100 concurrent users
-- **Database Load**: Test with large datasets (1000+ users)
-- **Response Time**: Ensure responses under 200ms for most endpoints
-- **Error Rate**: Maintain error rate below 1%
-
-### 9.2 Stress Testing
-- **Memory Usage**: Monitor memory consumption during high load
-- **Database Connections**: Ensure connection pool handles load
-- **CPU Usage**: Monitor CPU usage during peak loads
-
----
-
-## 10. Security Testing
-
-### 10.1 Authentication Tests
-- **Invalid Credentials**: Test with wrong username/password
-- **Expired Tokens**: Test with expired authentication tokens
-- **Missing Tokens**: Test endpoints without authentication
-
-### 10.2 Authorization Tests
-- **Role-based Access**: Test different user roles
-- **Permission-based Access**: Test specific permissions
-- **Unauthorized Access**: Test accessing restricted resources
-
-### 10.3 Input Validation
-- **SQL Injection**: Test with malicious SQL input
-- **XSS Attacks**: Test with script injection
-- **Data Validation**: Test with invalid data formats
-
----
-
-This collection provides comprehensive testing coverage for all microservice functionalities. Use it to ensure the API works correctly and handles various scenarios appropriately. 
+- **Public Endpoints**: User registration, login, and most CRUD operations are now public and don't require authentication
+- **Protected Endpoints**: Only profile access and password changes require authentication
+- **JWT Tokens**: Currently the JWT verification is a placeholder - implement actual JWT logic for production
+- **Error Handling**: All endpoints return consistent error formats
+- **Validation**: Basic input validation is implemented for required fields 

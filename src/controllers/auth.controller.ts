@@ -8,6 +8,40 @@ export class AuthController {
     this.authService = new AuthService();
   }
 
+  // User registration
+  register = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { username, credentials } = req.body;
+      
+      if (!username || !credentials) {
+        res.status(400).json({
+          status: 'error',
+          message: 'Se requiere nombre de usuario y contraseña'
+        });
+        return;
+      }
+      
+      const user = await this.authService.register({ username, credentials });
+      
+      res.status(201).json({
+        status: 'success',
+        message: 'Usuario registrado exitosamente',
+        data: {
+          user: {
+            userId: user.userId,
+            username: user.username
+          }
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: 'error',
+        message: 'Error al registrar usuario',
+        error: error.message || 'Error desconocido'
+      });
+    }
+  };
+
   // User login
   login = async (req: Request, res: Response): Promise<void> => {
     try {
