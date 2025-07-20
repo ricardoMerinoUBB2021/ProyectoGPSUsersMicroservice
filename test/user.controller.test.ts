@@ -42,54 +42,36 @@ describe('UserController', () => {
   });
 
   describe('getAllUsers', () => {
-    it('should return users with pagination', async () => {
+    it('should return users without pagination', async () => {
       const mockUsers = [
         { 
           userId: 1, 
           username: 'user1',
-          credentials: 'hashedPassword1',
-          salt: 'salt1',
+          credentials: 'hashedPassword',
+          salt: 'salt123',
           roles: [],
           beneficiary: null
         },
         { 
           userId: 2, 
           username: 'user2',
-          credentials: 'hashedPassword2',
-          salt: 'salt2',
+          credentials: 'hashedPassword',
+          salt: 'salt123',
           roles: [],
           beneficiary: null
         }
       ];
-      const mockTotal = 2;
 
-      mockRequest.query = { page: '1', limit: '10' };
-      mockUserService.findAllUsers.mockResolvedValue({ users: mockUsers as any, total: mockTotal });
+      mockUserService.findAllUsers.mockResolvedValue(mockUsers as any);
 
       await userController.getAllUsers(mockRequest as Request, mockResponse as Response);
 
-      expect(mockUserService.findAllUsers).toHaveBeenCalledWith(1, 10);
+      expect(mockUserService.findAllUsers).toHaveBeenCalledWith();
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({
         status: 'success',
-        data: {
-          users: mockUsers,
-          pagination: {
-            total: mockTotal,
-            page: 1,
-            limit: 10,
-            pages: 1
-          }
-        }
+        data: { users: mockUsers }
       });
-    });
-
-    it('should use default pagination values', async () => {
-      mockUserService.findAllUsers.mockResolvedValue({ users: [], total: 0 });
-
-      await userController.getAllUsers(mockRequest as Request, mockResponse as Response);
-
-      expect(mockUserService.findAllUsers).toHaveBeenCalledWith(1, 10);
     });
 
     it('should handle errors', async () => {
@@ -306,154 +288,197 @@ describe('UserController', () => {
     });
   });
 
-  describe('getAllRoles', () => {
-    it('should return all roles', async () => {
-      const mockRoles = [
+  describe('getAllBeneficiaries', () => {
+    it('should return all beneficiaries', async () => {
+      const mockBeneficiaries = [
         { 
-          roleId: 1, 
-          roleName: 'ADMIN',
-          description: 'Administrator role',
-          permissions: []
+          beneficiaryId: 1, 
+          discountCategory: 'GENERAL', 
+          discount: 0.1,
+          user: { userId: 1, username: 'beneficiary1' }
         },
         { 
-          roleId: 2, 
-          roleName: 'USER',
-          description: 'User role',
-          permissions: []
+          beneficiaryId: 2, 
+          discountCategory: 'SENIOR', 
+          discount: 0.15,
+          user: { userId: 2, username: 'beneficiary2' }
         }
       ];
 
-      mockUserService.getAllRoles.mockResolvedValue(mockRoles as any);
+      mockUserService.getAllBeneficiaries.mockResolvedValue(mockBeneficiaries as any);
 
-      await userController.getAllRoles(mockRequest as Request, mockResponse as Response);
+      await userController.getAllBeneficiaries(mockRequest as Request, mockResponse as Response);
 
-      expect(mockUserService.getAllRoles).toHaveBeenCalled();
+      expect(mockUserService.getAllBeneficiaries).toHaveBeenCalled();
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({
         status: 'success',
-        data: { roles: mockRoles }
+        data: { beneficiaries: mockBeneficiaries }
+      });
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('Database error');
+      mockUserService.getAllBeneficiaries.mockRejectedValue(error);
+
+      await userController.getAllBeneficiaries(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(500);
+      expect(mockJson).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Error al obtener beneficiarios',
+        error: 'Database error'
       });
     });
   });
 
-  describe('createRole', () => {
-    it('should create new role', async () => {
-      const roleData = { roleName: 'NEW_ROLE', description: 'New role description' };
-      const mockRole = { 
-        roleId: 1, 
-        roleName: 'NEW_ROLE',
-        description: 'New role description',
-        permissions: []
+  describe('getBeneficiaryById', () => {
+    it('should return beneficiary by ID', async () => {
+      const mockBeneficiary = { 
+        beneficiaryId: 1, 
+        discountCategory: 'GENERAL', 
+        discount: 0.1,
+        user: { userId: 1, username: 'beneficiary1' }
       };
 
-      mockRequest.body = roleData;
-      mockUserService.createRole.mockResolvedValue(mockRole as any);
+      mockRequest.params = { id: '1' };
+      mockUserService.findBeneficiaryById.mockResolvedValue(mockBeneficiary as any);
 
-      await userController.createRole(mockRequest as Request, mockResponse as Response);
+      await userController.getBeneficiaryById(mockRequest as Request, mockResponse as Response);
 
-      expect(mockUserService.createRole).toHaveBeenCalledWith(roleData);
-      expect(mockStatus).toHaveBeenCalledWith(201);
+      expect(mockUserService.findBeneficiaryById).toHaveBeenCalledWith(1);
+      expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({
         status: 'success',
-        message: 'Rol creado exitosamente',
-        data: { role: mockRole }
+        data: { beneficiary: mockBeneficiary }
+      });
+    });
+
+    it('should return 404 if beneficiary not found', async () => {
+      mockRequest.params = { id: '999' };
+      mockUserService.findBeneficiaryById.mockResolvedValue(null);
+
+      await userController.getBeneficiaryById(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(404);
+      expect(mockJson).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Beneficiario no encontrado'
+      });
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('Database error');
+      mockRequest.params = { id: '1' };
+      mockUserService.findBeneficiaryById.mockRejectedValue(error);
+
+      await userController.getBeneficiaryById(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(500);
+      expect(mockJson).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Error al obtener beneficiario',
+        error: 'Database error'
       });
     });
   });
 
-  describe('updateRole', () => {
-    it('should update existing role', async () => {
-      const updateData = { roleName: 'UPDATED_ROLE' };
-      const mockRole = { 
-        roleId: 1, 
-        roleName: 'UPDATED_ROLE',
-        description: 'Updated role description',
-        permissions: []
+  describe('updateBeneficiary', () => {
+    it('should update existing beneficiary', async () => {
+      const updateData = { discountCategory: 'SENIOR', discount: 0.15 };
+      const mockBeneficiary = { 
+        beneficiaryId: 1, 
+        discountCategory: 'SENIOR', 
+        discount: 0.15,
+        user: { userId: 1, username: 'beneficiary1' }
       };
 
       mockRequest.params = { id: '1' };
       mockRequest.body = updateData;
-      mockUserService.updateRole.mockResolvedValue(mockRole as any);
+      mockUserService.updateBeneficiary.mockResolvedValue(mockBeneficiary as any);
 
-      await userController.updateRole(mockRequest as Request, mockResponse as Response);
+      await userController.updateBeneficiary(mockRequest as Request, mockResponse as Response);
 
-      expect(mockUserService.updateRole).toHaveBeenCalledWith(1, updateData);
+      expect(mockUserService.updateBeneficiary).toHaveBeenCalledWith(1, updateData);
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({
         status: 'success',
-        message: 'Rol actualizado exitosamente',
-        data: { role: mockRole }
+        message: 'Beneficiario actualizado exitosamente',
+        data: { beneficiary: mockBeneficiary }
       });
     });
 
-    it('should return 404 if role not found', async () => {
+    it('should return 404 if beneficiary not found', async () => {
       mockRequest.params = { id: '999' };
-      mockRequest.body = { roleName: 'UPDATED_ROLE' };
-      mockUserService.updateRole.mockResolvedValue(null);
+      mockRequest.body = { discountCategory: 'SENIOR' };
+      mockUserService.updateBeneficiary.mockResolvedValue(null);
 
-      await userController.updateRole(mockRequest as Request, mockResponse as Response);
+      await userController.updateBeneficiary(mockRequest as Request, mockResponse as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(404);
       expect(mockJson).toHaveBeenCalledWith({
         status: 'error',
-        message: 'Rol no encontrado'
+        message: 'Beneficiario no encontrado'
       });
     });
-  });
 
-  describe('deleteRole', () => {
-    it('should delete role successfully', async () => {
+    it('should handle errors', async () => {
+      const error = new Error('Validation error');
       mockRequest.params = { id: '1' };
-      mockUserService.deleteRole.mockResolvedValue(true);
+      mockRequest.body = { discountCategory: 'SENIOR' };
+      mockUserService.updateBeneficiary.mockRejectedValue(error);
 
-      await userController.deleteRole(mockRequest as Request, mockResponse as Response);
+      await userController.updateBeneficiary(mockRequest as Request, mockResponse as Response);
 
-      expect(mockUserService.deleteRole).toHaveBeenCalledWith(1);
-      expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith({
-        status: 'success',
-        message: 'Rol eliminado exitosamente'
-      });
-    });
-
-    it('should return 404 if role not found', async () => {
-      mockRequest.params = { id: '999' };
-      mockUserService.deleteRole.mockResolvedValue(false);
-
-      await userController.deleteRole(mockRequest as Request, mockResponse as Response);
-
-      expect(mockStatus).toHaveBeenCalledWith(404);
+      expect(mockStatus).toHaveBeenCalledWith(400);
       expect(mockJson).toHaveBeenCalledWith({
         status: 'error',
-        message: 'Rol no encontrado'
+        message: 'Error al actualizar beneficiario',
+        error: 'Validation error'
       });
     });
   });
 
-  describe('getAllPermissions', () => {
-    it('should return all permissions', async () => {
-      const mockPermissions = [
-        { 
-          permissionsId: 1, 
-          permissionName: 'user:read',
-          description: 'Read user information'
-        },
-        { 
-          permissionsId: 2, 
-          permissionName: 'user:write',
-          description: 'Create and update users'
-        }
-      ];
+  describe('deleteBeneficiary', () => {
+    it('should delete beneficiary successfully', async () => {
+      mockRequest.params = { id: '1' };
+      mockUserService.deleteBeneficiary.mockResolvedValue(true);
 
-      mockUserService.getAllPermissions.mockResolvedValue(mockPermissions as any);
+      await userController.deleteBeneficiary(mockRequest as Request, mockResponse as Response);
 
-      await userController.getAllPermissions(mockRequest as Request, mockResponse as Response);
-
-      expect(mockUserService.getAllPermissions).toHaveBeenCalled();
+      expect(mockUserService.deleteBeneficiary).toHaveBeenCalledWith(1);
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({
         status: 'success',
-        data: { permissions: mockPermissions }
+        message: 'Beneficiario eliminado exitosamente'
+      });
+    });
+
+    it('should return 404 if beneficiary not found', async () => {
+      mockRequest.params = { id: '999' };
+      mockUserService.deleteBeneficiary.mockResolvedValue(false);
+
+      await userController.deleteBeneficiary(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(404);
+      expect(mockJson).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Beneficiario no encontrado'
+      });
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('Database error');
+      mockRequest.params = { id: '1' };
+      mockUserService.deleteBeneficiary.mockRejectedValue(error);
+
+      await userController.deleteBeneficiary(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(500);
+      expect(mockJson).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Error al eliminar beneficiario',
+        error: 'Database error'
       });
     });
   });

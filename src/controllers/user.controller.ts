@@ -8,25 +8,14 @@ export class UserController {
     this.userService = new UserService();
   }
 
-  // Get all users with pagination
+  // Get all users
   getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-      const page = parseInt(req.query.page as string, 10) || 1;
-      const limit = parseInt(req.query.limit as string, 10) || 10;
-      
-      const { users, total } = await this.userService.findAllUsers(page, limit);
+      const users = await this.userService.findAllUsers();
       
       res.status(200).json({
         status: 'success',
-        data: {
-          users,
-          pagination: {
-            total,
-            page,
-            limit,
-            pages: Math.ceil(total / limit)
-          }
-        }
+        data: { users }
       });
     } catch (error: any) {
       res.status(500).json({
@@ -173,110 +162,103 @@ export class UserController {
     }
   };
 
-  // Role management endpoints
-  getAllRoles = async (req: Request, res: Response): Promise<void> => {
+  // Get all beneficiaries
+  getAllBeneficiaries = async (req: Request, res: Response): Promise<void> => {
     try {
-      const roles = await this.userService.getAllRoles();
+      const beneficiaries = await this.userService.getAllBeneficiaries();
       
       res.status(200).json({
         status: 'success',
-        data: { roles }
+        data: { beneficiaries }
       });
     } catch (error: any) {
       res.status(500).json({
         status: 'error',
-        message: 'Error al obtener roles',
+        message: 'Error al obtener beneficiarios',
         error: error.message || 'Error desconocido'
       });
     }
   };
 
-  createRole = async (req: Request, res: Response): Promise<void> => {
+  // Get beneficiary by ID
+  getBeneficiaryById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const newRole = await this.userService.createRole(req.body);
+      const beneficiaryId = parseInt(req.params.id, 10);
+      const beneficiary = await this.userService.findBeneficiaryById(beneficiaryId);
       
-      res.status(201).json({
-        status: 'success',
-        message: 'Rol creado exitosamente',
-        data: { role: newRole }
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        status: 'error',
-        message: 'Error al crear rol',
-        error: error.message || 'Error desconocido'
-      });
-    }
-  };
-
-  updateRole = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const roleId = parseInt(req.params.id, 10);
-      const updatedRole = await this.userService.updateRole(roleId, req.body);
-      
-      if (!updatedRole) {
+      if (!beneficiary) {
         res.status(404).json({
           status: 'error',
-          message: 'Rol no encontrado'
+          message: 'Beneficiario no encontrado'
         });
         return;
       }
       
       res.status(200).json({
         status: 'success',
-        message: 'Rol actualizado exitosamente',
-        data: { role: updatedRole }
+        data: { beneficiary }
       });
     } catch (error: any) {
-      res.status(400).json({
+      res.status(500).json({
         status: 'error',
-        message: 'Error al actualizar rol',
+        message: 'Error al obtener beneficiario',
         error: error.message || 'Error desconocido'
       });
     }
   };
 
-  deleteRole = async (req: Request, res: Response): Promise<void> => {
+  // Update a beneficiary
+  updateBeneficiary = async (req: Request, res: Response): Promise<void> => {
     try {
-      const roleId = parseInt(req.params.id, 10);
-      const deleted = await this.userService.deleteRole(roleId);
+      const beneficiaryId = parseInt(req.params.id, 10);
+      const updatedBeneficiary = await this.userService.updateBeneficiary(beneficiaryId, req.body);
+      
+      if (!updatedBeneficiary) {
+        res.status(404).json({
+          status: 'error',
+          message: 'Beneficiario no encontrado'
+        });
+        return;
+      }
+      
+      res.status(200).json({
+        status: 'success',
+        message: 'Beneficiario actualizado exitosamente',
+        data: { beneficiary: updatedBeneficiary }
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        status: 'error',
+        message: 'Error al actualizar beneficiario',
+        error: error.message || 'Error desconocido'
+      });
+    }
+  };
+
+  // Delete a beneficiary
+  deleteBeneficiary = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const beneficiaryId = parseInt(req.params.id, 10);
+      const deleted = await this.userService.deleteBeneficiary(beneficiaryId);
       
       if (!deleted) {
         res.status(404).json({
           status: 'error',
-          message: 'Rol no encontrado'
+          message: 'Beneficiario no encontrado'
         });
         return;
       }
       
       res.status(200).json({
         status: 'success',
-        message: 'Rol eliminado exitosamente'
+        message: 'Beneficiario eliminado exitosamente'
       });
     } catch (error: any) {
       res.status(500).json({
         status: 'error',
-        message: 'Error al eliminar rol',
+        message: 'Error al eliminar beneficiario',
         error: error.message || 'Error desconocido'
       });
     }
   };
-
-  // Permission management endpoints
-  getAllPermissions = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const permissions = await this.userService.getAllPermissions();
-      
-      res.status(200).json({
-        status: 'success',
-        data: { permissions }
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        status: 'error',
-        message: 'Error al obtener permisos',
-        error: error.message || 'Error desconocido'
-      });
-    }
-  };
-} 
+}; 

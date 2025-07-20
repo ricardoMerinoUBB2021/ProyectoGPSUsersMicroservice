@@ -3,7 +3,6 @@ import cors from 'cors';
 import { json } from 'body-parser';
 import "reflect-metadata";
 import { UserRoutes } from './routes/user.routes';
-import { AuthRoutes } from './routes/auth.routes';
 import { RolesRoutes } from './routes/roles.routes';
 import { PermissionsRoutes } from './routes/permissions.routes';
 
@@ -15,12 +14,10 @@ app.use(cors());
 
 // Initialize routes
 const userRoutes = new UserRoutes();
-const authRoutes = new AuthRoutes();
 const rolesRoutes = new RolesRoutes();
 const permissionsRoutes = new PermissionsRoutes();
 
 // Register routes
-app.use('/api/auth', authRoutes.getRouter());
 app.use('/api', userRoutes.getRouter());
 app.use('/api/roles', rolesRoutes.getRouter());
 app.use('/api/permissions', permissionsRoutes.getRouter());

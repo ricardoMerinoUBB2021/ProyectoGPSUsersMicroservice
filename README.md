@@ -2,6 +2,8 @@
 
 Este microservicio gestiona toda la información relacionada con los usuarios del sistema de farmacias comunales, incluyendo beneficiarios (pacientes), administradores, farmacéuticos y otros roles operativos.
 
+**Nota importante**: Este microservicio ya no maneja autenticación ni autorización. Todas las funciones de autorización han sido movidas al API Gateway. Para más información sobre los componentes de autorización, consulte la carpeta `/deprecated`.
+
 ## Nueva Estructura de Base de Datos
 
 El proyecto ha sido actualizado para utilizar una nueva estructura de base de datos PostgreSQL que incluye:
@@ -77,13 +79,6 @@ El proyecto ha sido actualizado para utilizar una nueva estructura de base de da
 | PUT | /api/permissions/{id} | Actualizar permiso |
 | DELETE | /api/permissions/{id} | Eliminar permiso |
 
-### Autenticación
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | /api/auth/login | Autenticación de usuarios |
-| GET | /api/auth/perfil | Obtener información del perfil actual |
-| POST | /api/auth/cambiar-clave | Cambiar contraseña |
-
 ### Beneficiarios
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
@@ -135,7 +130,6 @@ NODE_ENV=development
 /src
   /controllers    # Controladores API
     - user.controller.ts
-    - auth.controller.ts
     - roles.controller.ts
     - permissions.controller.ts
   /entities       # Entidades TypeORM
@@ -148,35 +142,41 @@ NODE_ENV=development
     - initial-schema.ts
   /services       # Lógica de negocio
     - user.service.ts
-    - auth.service.ts
     - roles.service.ts
     - permissions.service.ts
-  /middlewares    # Middleware de autenticación
-    - auth.middleware.ts
   /routes         # Rutas de la API
     - user.routes.ts
-    - auth.routes.ts
     - roles.routes.ts
     - permissions.routes.ts
   /utils          # Funciones de utilidad
     - seed-database.ts
   /config         # Configuración
     - data-source.ts
+
+/deprecated       # Componentes de autorización (para API Gateway)
+  /middlewares    # Middlewares de autorización
+  /controllers    # Controladores de autenticación
+  /services       # Servicios de autenticación
+  /routes         # Rutas de autenticación
+  /test           # Tests de autorización
+  README.md       # Documentación para API Gateway
 ```
 
-## Autenticación y Autorización
+## Integración con API Gateway
 
-### Sistema de Autenticación
+Este microservicio ahora funciona como un servicio puro de gestión de usuarios. El API Gateway es responsable de:
 
-- **Encriptación**: bcrypt con salt único por usuario
-- **Tokens**: JWT (pendiente de implementación)
-- **Sesiones**: Basadas en tokens
+1. **Autenticación**: Verificación de JWT tokens
+2. **Autorización**: Verificación de permisos y roles
+3. **Forwarding**: Envío de información de usuario a través de headers
 
-### Sistema de Autorización
+### Headers Esperados del API Gateway
 
-- **Roles**: Asignación de roles a usuarios
-- **Permisos**: Permisos específicos por rol
-- **Middleware**: Verificación automática de permisos
+El microservicio espera recibir información del usuario a través de headers cuando sea necesario:
+
+- `X-User-ID`: ID del usuario autenticado
+- `X-User-Roles`: Roles del usuario (separados por comas)
+- `X-User-Permissions`: Permisos del usuario (separados por comas)
 
 ## Scripts Disponibles
 
@@ -198,14 +198,12 @@ npm test                 # Ejecutar pruebas
 ## Consideraciones de Seguridad
 
 - Encriptación de contraseñas con bcrypt y salt único
-- Verificación de permisos en cada endpoint
-- Protección contra ataques de fuerza bruta
 - Validación de entrada en todos los endpoints
+- El microservicio confía en el API Gateway para la autorización
 
 ## Próximas Mejoras
 
-1. **Implementación de JWT** para autenticación
-2. **Auditoría de cambios** en permisos y roles
-3. **Cache de permisos** para mejor rendimiento
-4. **API de gestión de personas** independiente
-5. **Validación avanzada** de datos de entrada
+1. **Validación de Headers**: Implementar validación de headers del API Gateway
+2. **Logging**: Mejorar el sistema de logging para auditoría
+3. **Caching**: Implementar cache para consultas frecuentes
+4. **Documentación API**: Generar documentación automática de la API

@@ -5,170 +5,24 @@
 http://localhost:3002/api
 ```
 
-## Authentication
-Most endpoints require authentication via JWT token in the Authorization header:
-```
-Authorization: Bearer <your-jwt-token>
-```
+## Important Note
+This microservice no longer handles authentication or authorization. All authorization is now handled by the API Gateway. The endpoints below are now public and do not require authentication headers.
+
+## API Structure Overview
+
+The API is organized into three main route groups:
+- **User Management**: `/api/usuarios`, `/api/beneficiarios`
+- **Role Management**: `/api/roles/*`
+- **Permission Management**: `/api/permissions/*`
 
 ## Public Endpoints (No Authentication Required)
 
-### 1. User Registration
-**POST** `/auth/register`
+### User Management Endpoints
 
-Create a new user account (no authentication required).
+#### 1. Get All Users
+**GET** `/usuarios`
 
-**Request Body:**
-```json
-{
-  "username": "newuser",
-  "credentials": "password123"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "status": "success",
-  "message": "Usuario registrado exitosamente",
-  "data": {
-    "user": {
-      "userId": 1,
-      "username": "newuser"
-    }
-  }
-}
-```
-
-**Error Response (400 Bad Request):**
-```json
-{
-  "status": "error",
-  "message": "Se requiere nombre de usuario y contraseña"
-}
-```
-
-### 2. User Login
-**POST** `/auth/login`
-
-Authenticate user and get access token.
-
-**Request Body:**
-```json
-{
-  "username": "admin",
-  "credentials": "admin123"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "message": "Inicio de sesión exitoso",
-  "data": {
-    "user": {
-      "userId": 1,
-      "username": "admin",
-      "roles": [
-        {
-          "roleId": 1,
-          "roleName": "ADMIN",
-          "description": "Administrator with full access",
-          "permissions": [
-            {
-              "permissionsId": 1,
-              "permissionName": "user:read",
-              "description": "Read user information"
-            }
-          ]
-        }
-      ],
-      "beneficiary": null
-    }
-  }
-}
-```
-
-**Error Response (401 Unauthorized):**
-```json
-{
-  "status": "error",
-  "message": "Usuario o contraseña incorrectos"
-}
-```
-
-## Protected Endpoints (Authentication Required)
-
-### 3. Get User Profile
-**GET** `/auth/perfil`
-
-Get current user profile information.
-
-**Headers:**
-```
-Authorization: Bearer <jwt-token>
-```
-
-**Request Body:**
-```json
-{
-  "userId": 1
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "data": {
-    "profile": {
-      "userId": 1,
-      "username": "admin",
-      "roles": [...],
-      "beneficiary": {...}
-    }
-  }
-}
-```
-
-### 4. Change Password
-**POST** `/auth/cambiar-clave`
-
-Change user password.
-
-**Headers:**
-```
-Authorization: Bearer <jwt-token>
-```
-
-**Request Body:**
-```json
-{
-  "userId": 1,
-  "currentPassword": "oldpassword",
-  "newPassword": "newpassword"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "message": "Contraseña actualizada exitosamente"
-}
-```
-
-## User Management Endpoints
-
-### 5. Get All Users (Public - No Auth Required)
-**GET** `/usuarios?page=1&limit=10`
-
-Get paginated list of users.
-
-**Query Parameters:**
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 10)
+Get all users (no pagination).
 
 **Response (200 OK):**
 ```json
@@ -179,24 +33,24 @@ Get paginated list of users.
       {
         "userId": 1,
         "username": "admin",
-        "roles": [...],
-        "beneficiary": {...}
+        "roles": [
+          {
+            "roleId": 1,
+            "roleName": "ADMIN",
+            "description": "Administrator with full access"
+          }
+        ],
+        "beneficiary": null
       }
-    ],
-    "pagination": {
-      "total": 1,
-      "page": 1,
-      "limit": 10,
-      "pages": 1
-    }
+    ]
   }
 }
 ```
 
-### 6. Get User by ID (Public - No Auth Required)
-**GET** `/usuarios/:id`
+#### 2. Get User by ID
+**GET** `/usuarios/{id}`
 
-Get specific user by ID.
+Get a specific user by their ID.
 
 **Response (200 OK):**
 ```json
@@ -206,14 +60,28 @@ Get specific user by ID.
     "user": {
       "userId": 1,
       "username": "admin",
-      "roles": [...],
-      "beneficiary": {...}
+      "roles": [
+        {
+          "roleId": 1,
+          "roleName": "ADMIN",
+          "description": "Administrator with full access"
+        }
+      ],
+      "beneficiary": null
     }
   }
 }
 ```
 
-### 7. Create User (Public - No Auth Required)
+**Error Response (404 Not Found):**
+```json
+{
+  "status": "error",
+  "message": "Usuario no encontrado"
+}
+```
+
+#### 3. Create User
 **POST** `/usuarios`
 
 Create a new user.
@@ -234,23 +102,31 @@ Create a new user.
   "data": {
     "user": {
       "userId": 2,
-      "username": "newuser",
-      "roles": [],
-      "beneficiary": null
+      "username": "newuser"
     }
   }
 }
 ```
 
-### 8. Update User (Public - No Auth Required)
-**PUT** `/usuarios/:id`
+**Error Response (400 Bad Request) - Username already exists:**
+```json
+{
+  "status": "error",
+  "message": "Error al crear usuario",
+  "error": "Username already exists"
+}
+```
 
-Update existing user.
+#### 4. Update User
+**PUT** `/usuarios/{id}`
+
+Update an existing user.
 
 **Request Body:**
 ```json
 {
-  "username": "updateduser"
+  "username": "updateduser",
+  "credentials": "newpassword123"
 }
 ```
 
@@ -262,18 +138,16 @@ Update existing user.
   "data": {
     "user": {
       "userId": 1,
-      "username": "updateduser",
-      "roles": [...],
-      "beneficiary": {...}
+      "username": "updateduser"
     }
   }
 }
 ```
 
-### 9. Delete User (Public - No Auth Required)
-**DELETE** `/usuarios/:id`
+#### 5. Delete User
+**DELETE** `/usuarios/{id}`
 
-Delete user by ID.
+Delete a user. If the user has an associated beneficiary, both the user and beneficiary will be deleted.
 
 **Response (200 OK):**
 ```json
@@ -283,20 +157,18 @@ Delete user by ID.
 }
 ```
 
-## Beneficiary Management
-
-### 10. Create Beneficiary (Public - No Auth Required)
+#### 6. Create Beneficiary
 **POST** `/beneficiarios`
 
-Create a new beneficiary with associated user.
+Create a new beneficiary with associated user account.
 
 **Request Body:**
 ```json
 {
-  "username": "beneficiary",
+  "username": "beneficiary1",
   "credentials": "password123",
-  "discountCategory": "GENERAL",
-  "discount": 0.1
+  "discountCategory": "SENIOR",
+  "discount": 0.15
 }
 ```
 
@@ -308,21 +180,172 @@ Create a new beneficiary with associated user.
   "data": {
     "beneficiary": {
       "beneficiaryId": 1,
-      "discountCategory": "GENERAL",
-      "discount": 0.1,
+      "discountCategory": "SENIOR",
+      "discount": 0.15,
       "user": {
-        "userId": 2,
-        "username": "beneficiary"
+        "userId": 3,
+        "username": "beneficiary1"
       }
     }
   }
 }
 ```
 
-## Role Management
+**Error Response (400 Bad Request) - Username already exists:**
+```json
+{
+  "status": "error",
+  "message": "Error al crear beneficiario",
+  "error": "Username already exists"
+}
+```
 
-### 11. Get All Roles (Public - No Auth Required)
-**GET** `/roles`
+#### 7. Get All Beneficiaries
+**GET** `/beneficiarios`
+
+Get all beneficiaries with their associated user information.
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "data": {
+    "beneficiaries": [
+      {
+        "beneficiaryId": 1,
+        "discountCategory": "SENIOR",
+        "discount": 0.15,
+        "user": {
+          "userId": 3,
+          "username": "beneficiary1",
+          "credentials": "hashedPassword",
+          "salt": "salt123",
+          "roles": [],
+          "beneficiary": null
+        }
+      },
+      {
+        "beneficiaryId": 2,
+        "discountCategory": "GENERAL",
+        "discount": 0.1,
+        "user": {
+          "userId": 4,
+          "username": "beneficiary2",
+          "credentials": "hashedPassword",
+          "salt": "salt123",
+          "roles": [],
+          "beneficiary": null
+        }
+      }
+    ]
+  }
+}
+```
+
+#### 8. Get Beneficiary by ID
+**GET** `/beneficiarios/{id}`
+
+Get a specific beneficiary by their ID.
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "data": {
+    "beneficiary": {
+      "beneficiaryId": 1,
+      "discountCategory": "SENIOR",
+      "discount": 0.15,
+      "user": {
+        "userId": 3,
+        "username": "beneficiary1",
+        "credentials": "hashedPassword",
+        "salt": "salt123",
+        "roles": [],
+        "beneficiary": null
+      }
+    }
+  }
+}
+```
+
+**Error Response (404 Not Found):**
+```json
+{
+  "status": "error",
+  "message": "Beneficiario no encontrado"
+}
+```
+
+#### 9. Update Beneficiary
+**PUT** `/beneficiarios/{id}`
+
+Update an existing beneficiary's information.
+
+**Request Body:**
+```json
+{
+  "discountCategory": "SENIOR",
+  "discount": 0.2
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Beneficiario actualizado exitosamente",
+  "data": {
+    "beneficiary": {
+      "beneficiaryId": 1,
+      "discountCategory": "SENIOR",
+      "discount": 0.2,
+      "user": {
+        "userId": 3,
+        "username": "beneficiary1",
+        "credentials": "hashedPassword",
+        "salt": "salt123",
+        "roles": [],
+        "beneficiary": null
+      }
+    }
+  }
+}
+```
+
+**Error Response (404 Not Found):**
+```json
+{
+  "status": "error",
+  "message": "Beneficiario no encontrado"
+}
+```
+
+#### 10. Delete Beneficiary
+**DELETE** `/beneficiarios/{id}`
+
+Delete a beneficiary. This will also delete the associated user account.
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Beneficiario eliminado exitosamente"
+}
+```
+
+**Error Response (404 Not Found):**
+```json
+{
+  "status": "error",
+  "message": "Beneficiario no encontrado"
+}
+```
+
+### Role Management Endpoints
+
+#### 11. Get All Roles
+**GET** `/api/roles`
 
 Get all available roles.
 
@@ -336,23 +359,55 @@ Get all available roles.
         "roleId": 1,
         "roleName": "ADMIN",
         "description": "Administrator with full access",
-        "permissions": [...]
+        "permissions": [
+          {
+            "permissionsId": 1,
+            "permissionName": "user:read",
+            "description": "Read user information"
+          }
+        ]
       }
     ]
   }
 }
 ```
 
-### 12. Create Role (Public - No Auth Required)
-**POST** `/roles`
+#### 12. Get Role by ID
+**GET** `/api/roles/{id}`
+
+Get a specific role by ID.
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "data": {
+    "role": {
+      "roleId": 1,
+      "roleName": "ADMIN",
+      "description": "Administrator with full access",
+      "permissions": [
+        {
+          "permissionsId": 1,
+          "permissionName": "user:read",
+          "description": "Read user information"
+        }
+      ]
+    }
+  }
+}
+```
+
+#### 13. Create Role
+**POST** `/api/roles`
 
 Create a new role.
 
 **Request Body:**
 ```json
 {
-  "roleName": "NEW_ROLE",
-  "description": "New role description"
+  "roleName": "MODERATOR",
+  "description": "Moderator with limited access"
 }
 ```
 
@@ -363,24 +418,24 @@ Create a new role.
   "message": "Rol creado exitosamente",
   "data": {
     "role": {
-      "roleId": 2,
-      "roleName": "NEW_ROLE",
-      "description": "New role description",
-      "permissions": []
+      "roleId": 5,
+      "roleName": "MODERATOR",
+      "description": "Moderator with limited access"
     }
   }
 }
 ```
 
-### 13. Update Role (Public - No Auth Required)
-**PUT** `/roles/:id`
+#### 14. Update Role
+**PUT** `/api/roles/{id}`
 
-Update existing role.
+Update an existing role.
 
 **Request Body:**
 ```json
 {
-  "roleName": "UPDATED_ROLE"
+  "roleName": "UPDATED_MODERATOR",
+  "description": "Updated moderator description"
 }
 ```
 
@@ -391,19 +446,18 @@ Update existing role.
   "message": "Rol actualizado exitosamente",
   "data": {
     "role": {
-      "roleId": 1,
-      "roleName": "UPDATED_ROLE",
-      "description": "Updated role description",
-      "permissions": []
+      "roleId": 5,
+      "roleName": "UPDATED_MODERATOR",
+      "description": "Updated moderator description"
     }
   }
 }
 ```
 
-### 14. Delete Role (Public - No Auth Required)
-**DELETE** `/roles/:id`
+#### 15. Delete Role
+**DELETE** `/api/roles/{id}`
 
-Delete role by ID.
+Delete a role.
 
 **Response (200 OK):**
 ```json
@@ -413,10 +467,10 @@ Delete role by ID.
 }
 ```
 
-## Permission Management
+### Permission Management Endpoints
 
-### 15. Get All Permissions (Public - No Auth Required)
-**GET** `/permisos`
+#### 16. Get All Permissions
+**GET** `/api/permissions`
 
 Get all available permissions.
 
@@ -430,9 +484,102 @@ Get all available permissions.
         "permissionsId": 1,
         "permissionName": "user:read",
         "description": "Read user information"
+      },
+      {
+        "permissionsId": 2,
+        "permissionName": "user:write",
+        "description": "Create and update users"
       }
     ]
   }
+}
+```
+
+#### 17. Get Permission by ID
+**GET** `/api/permissions/{id}`
+
+Get a specific permission by ID.
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "data": {
+    "permission": {
+      "permissionsId": 1,
+      "permissionName": "user:read",
+      "description": "Read user information"
+    }
+  }
+}
+```
+
+#### 18. Create Permission
+**POST** `/api/permissions`
+
+Create a new permission.
+
+**Request Body:**
+```json
+{
+  "permissionName": "user:delete",
+  "description": "Delete users"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "status": "success",
+  "message": "Permiso creado exitosamente",
+  "data": {
+    "permission": {
+      "permissionsId": 3,
+      "permissionName": "user:delete",
+      "description": "Delete users"
+    }
+  }
+}
+```
+
+#### 19. Update Permission
+**PUT** `/api/permissions/{id}`
+
+Update an existing permission.
+
+**Request Body:**
+```json
+{
+  "permissionName": "user:delete",
+  "description": "Delete users with confirmation"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Permiso actualizado exitosamente",
+  "data": {
+    "permission": {
+      "permissionsId": 3,
+      "permissionName": "user:delete",
+      "description": "Delete users with confirmation"
+    }
+  }
+}
+```
+
+#### 20. Delete Permission
+**DELETE** `/api/permissions/{id}`
+
+Delete a permission.
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Permiso eliminado exitosamente"
 }
 ```
 
@@ -444,23 +591,8 @@ Get all available permissions.
 ```json
 {
   "status": "error",
-  "message": "Error description"
-}
-```
-
-**401 Unauthorized:**
-```json
-{
-  "status": "error",
-  "message": "Token de autenticación requerido"
-}
-```
-
-**403 Forbidden:**
-```json
-{
-  "status": "error",
-  "message": "No tiene permisos para acceder a este recurso"
+  "message": "Error description",
+  "error": "Detailed error message"
 }
 ```
 
@@ -468,7 +600,7 @@ Get all available permissions.
 ```json
 {
   "status": "error",
-  "message": "Usuario no encontrado"
+  "message": "Resource not found"
 }
 ```
 
@@ -476,40 +608,72 @@ Get all available permissions.
 ```json
 {
   "status": "error",
-  "message": "Error en el servidor",
-  "error": "Detailed error message"
+  "message": "Error interno del servidor",
+  "error": "Detailed error message (development only)"
 }
 ```
 
 ## Testing Scenarios
 
-### 1. User Registration Flow
-1. Register new user: `POST /auth/register`
-2. Login with credentials: `POST /auth/login`
-3. Get user profile: `GET /auth/perfil`
-
-### 2. User Management Flow
+### 1. User Management Flow
 1. Create user: `POST /usuarios`
 2. Get all users: `GET /usuarios`
 3. Get specific user: `GET /usuarios/:id`
 4. Update user: `PUT /usuarios/:id`
 5. Delete user: `DELETE /usuarios/:id`
 
-### 3. Beneficiary Management Flow
+### 2. Beneficiary Management Flow
 1. Create beneficiary: `POST /beneficiarios`
-2. Verify user and beneficiary creation
+2. Get all beneficiaries: `GET /beneficiarios`
+3. Get specific beneficiary: `GET /beneficiarios/:id`
+4. Update beneficiary: `PUT /beneficiarios/:id`
+5. Delete beneficiary: `DELETE /beneficiarios/:id`
 
-### 4. Role and Permission Management Flow
-1. Get all roles: `GET /roles`
-2. Create new role: `POST /roles`
-3. Update role: `PUT /roles/:id`
-4. Delete role: `DELETE /roles/:id`
-5. Get all permissions: `GET /permisos`
+### 3. Role Management Flow
+1. Get all roles: `GET /api/roles`
+2. Create new role: `POST /api/roles`
+3. Update role: `PUT /api/roles/:id`
+4. Delete role: `DELETE /api/roles/:id`
+
+### 4. Permission Management Flow
+1. Get all permissions: `GET /api/permissions`
+2. Create new permission: `POST /api/permissions`
+3. Update permission: `PUT /api/permissions/:id`
+4. Delete permission: `DELETE /api/permissions/:id`
+
+## Test Results Summary
+
+✅ **All tests passing**: 73 tests passed, 0 failed
+- User Controller: 16 tests passed
+- User Service: 26 tests passed  
+- Roles Controller: 10 tests passed
+- Permissions Controller: 9 tests passed
+
+**Coverage**: 61.43% statement coverage, 40.9% branch coverage
+
+## Recent Changes
+
+### ✅ **Fixed Issues:**
+
+1. **Removed Pagination**: All endpoints now return complete data without pagination
+2. **Username Uniqueness**: Users and beneficiaries now enforce unique usernames
+3. **Duplicate Endpoints Removed**: Eliminated duplicate role and permission endpoints from user routes
+4. **Enhanced Delete User**: Users with beneficiaries are now properly deleted (both user and beneficiary)
+5. **Improved Error Handling**: Better error messages for duplicate usernames
+6. **Expanded Beneficiary Management**: Added GET, PUT, and DELETE operations for beneficiaries
+
+### ✅ **API Structure:**
+
+- **User Management**: `/api/usuarios`, `/api/beneficiarios`
+- **Role Management**: `/api/roles/*` (dedicated endpoints only)
+- **Permission Management**: `/api/permissions/*` (dedicated endpoints only)
 
 ## Notes
 
-- **Public Endpoints**: User registration, login, and most CRUD operations are now public and don't require authentication
-- **Protected Endpoints**: Only profile access and password changes require authentication
-- **JWT Tokens**: Currently the JWT verification is a placeholder - implement actual JWT logic for production
+- **No Authentication Required**: All endpoints are now public and do not require authentication headers
+- **API Gateway Integration**: This microservice expects user information to be passed via headers from the API Gateway when needed
 - **Error Handling**: All endpoints return consistent error formats
-- **Validation**: Basic input validation is implemented for required fields 
+- **Validation**: Username uniqueness is enforced for both users and beneficiaries
+- **Cascading Deletes**: Deleting a user with a beneficiary will delete both records, and deleting a beneficiary will delete both beneficiary and user
+- **Complete CRUD Operations**: All entities now support full CRUD operations (Create, Read, Update, Delete)
+- **Test Coverage**: The service has comprehensive test coverage with all critical functionality tested

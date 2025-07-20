@@ -16,6 +16,7 @@ describe('UserService', () => {
   let mockRoleRepository: any;
   let mockPermissionRepository: any;
   let mockPersonRepository: any;
+  let mockQueryRunner: any;
 
   beforeEach(() => {
     // Reset all mocks
@@ -23,7 +24,7 @@ describe('UserService', () => {
 
     // Create mock repositories
     mockUserRepository = {
-      findAndCount: jest.fn(),
+      find: jest.fn(),
       findOne: jest.fn(),
       findOneBy: jest.fn(),
       create: jest.fn(),
@@ -33,6 +34,7 @@ describe('UserService', () => {
     };
 
     mockBeneficiaryRepository = {
+      find: jest.fn(),
       findOne: jest.fn(),
       create: jest.fn(),
       save: jest.fn()
@@ -56,6 +58,21 @@ describe('UserService', () => {
       save: jest.fn()
     };
 
+    // Mock query runner
+    mockQueryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      manager: {
+        findOne: jest.fn(),
+        getRepository: jest.fn(),
+        save: jest.fn(),
+        delete: jest.fn()
+      }
+    };
+
     // Mock the getRepository method
     (AppDataSource.getRepository as jest.Mock).mockImplementation((entity) => {
       if (entity === User) return mockUserRepository;
@@ -66,38 +83,25 @@ describe('UserService', () => {
       return {};
     });
 
+    // Mock createQueryRunner
+    (AppDataSource.createQueryRunner as jest.Mock).mockReturnValue(mockQueryRunner);
+
     userService = new UserService();
   });
 
   describe('findAllUsers', () => {
-    it('should return users with pagination', async () => {
+    it('should return users without pagination', async () => {
       const mockUsers = [
         { userId: 1, username: 'user1' },
         { userId: 2, username: 'user2' }
       ];
-      const mockTotal = 2;
 
-      mockUserRepository.findAndCount.mockResolvedValue([mockUsers, mockTotal]);
+      mockUserRepository.find.mockResolvedValue(mockUsers);
 
-      const result = await userService.findAllUsers(1, 10);
+      const result = await userService.findAllUsers();
 
-      expect(result.users).toEqual(mockUsers);
-      expect(result.total).toBe(mockTotal);
-      expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
-        skip: 0,
-        take: 10,
-        relations: ['roles', 'beneficiary']
-      });
-    });
-
-    it('should use default pagination values', async () => {
-      mockUserRepository.findAndCount.mockResolvedValue([[], 0]);
-
-      await userService.findAllUsers();
-
-      expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
-        skip: 0,
-        take: 10,
+      expect(result).toEqual(mockUsers);
+      expect(mockUserRepository.find).toHaveBeenCalledWith({
         relations: ['roles', 'beneficiary']
       });
     });
@@ -172,6 +176,17 @@ describe('UserService', () => {
 
       expect(result).toEqual(mockCreatedUser);
     });
+
+    it('should throw error if username already exists', async () => {
+      const userData = {
+        username: 'existinguser',
+        credentials: 'password123'
+      };
+
+      mockUserRepository.findOne.mockResolvedValue({ userId: 1, username: 'existinguser' });
+
+      await expect(userService.createUser(userData)).rejects.toThrow('Username already exists');
+    });
   });
 
   describe('updateUser', () => {
@@ -201,20 +216,42 @@ describe('UserService', () => {
 
   describe('deleteUser', () => {
     it('should delete user successfully', async () => {
-      mockUserRepository.delete.mockResolvedValue({ affected: 1 });
+      const mockUser = { userId: 1, username: 'testuser', beneficiary: null };
+      mockQueryRunner.manager.findOne.mockResolvedValue(mockUser);
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
 
       const result = await userService.deleteUser(1);
 
       expect(result).toBe(true);
-      expect(mockUserRepository.delete).toHaveBeenCalledWith(1);
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it('should delete user with beneficiary', async () => {
+      const mockUser = { 
+        userId: 1, 
+        username: 'testuser', 
+        beneficiary: { beneficiaryId: 1 } 
+      };
+      mockQueryRunner.manager.findOne.mockResolvedValue(mockUser);
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+
+      const result = await userService.deleteUser(1);
+
+      expect(result).toBe(true);
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Beneficiary, 1);
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(User, 1);
     });
 
     it('should return false if user not found', async () => {
-      mockUserRepository.delete.mockResolvedValue({ affected: 0 });
+      mockQueryRunner.manager.findOne.mockResolvedValue(null);
 
       const result = await userService.deleteUser(999);
 
       expect(result).toBe(false);
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
     });
   });
 
@@ -233,6 +270,98 @@ describe('UserService', () => {
     });
   });
 
+  describe('getAllBeneficiaries', () => {
+    it('should return all beneficiaries', async () => {
+      const mockBeneficiaries = [
+        { beneficiaryId: 1, discountCategory: 'GENERAL', discount: 0.1 },
+        { beneficiaryId: 2, discountCategory: 'SENIOR', discount: 0.15 }
+      ];
+      mockBeneficiaryRepository.find.mockResolvedValue(mockBeneficiaries);
+
+      const result = await userService.getAllBeneficiaries();
+
+      expect(result).toEqual(mockBeneficiaries);
+      expect(mockBeneficiaryRepository.find).toHaveBeenCalledWith({
+        relations: ['user']
+      });
+    });
+  });
+
+  describe('updateBeneficiary', () => {
+    it('should update existing beneficiary', async () => {
+      const existingBeneficiary = { beneficiaryId: 1, discountCategory: 'GENERAL', discount: 0.1 };
+      const updateData = { discountCategory: 'SENIOR', discount: 0.15 };
+      const updatedBeneficiary = { ...existingBeneficiary, ...updateData };
+
+      mockBeneficiaryRepository.findOne.mockResolvedValue(existingBeneficiary);
+      mockBeneficiaryRepository.save.mockResolvedValue(updatedBeneficiary);
+
+      const result = await userService.updateBeneficiary(1, updateData);
+
+      expect(result).toEqual(updatedBeneficiary);
+      expect(mockBeneficiaryRepository.findOne).toHaveBeenCalledWith({
+        where: { beneficiaryId: 1 },
+        relations: ['user']
+      });
+      expect(mockBeneficiaryRepository.save).toHaveBeenCalled();
+    });
+
+    it('should return null if beneficiary not found', async () => {
+      mockBeneficiaryRepository.findOne.mockResolvedValue(null);
+
+      const result = await userService.updateBeneficiary(999, { discountCategory: 'SENIOR' });
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('deleteBeneficiary', () => {
+    it('should delete beneficiary successfully', async () => {
+      const mockBeneficiary = { 
+        beneficiaryId: 1, 
+        discountCategory: 'GENERAL',
+        user: { userId: 1, username: 'testuser' }
+      };
+      mockQueryRunner.manager.findOne.mockResolvedValue(mockBeneficiary);
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+
+      const result = await userService.deleteBeneficiary(1);
+
+      expect(result).toBe(true);
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Beneficiary, 1);
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(User, 1);
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it('should delete beneficiary without user', async () => {
+      const mockBeneficiary = { 
+        beneficiaryId: 1, 
+        discountCategory: 'GENERAL',
+        user: null
+      };
+      mockQueryRunner.manager.findOne.mockResolvedValue(mockBeneficiary);
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+
+      const result = await userService.deleteBeneficiary(1);
+
+      expect(result).toBe(true);
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Beneficiary, 1);
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalledWith(User, expect.any(Number));
+    });
+
+    it('should return false if beneficiary not found', async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue(null);
+
+      const result = await userService.deleteBeneficiary(999);
+
+      expect(result).toBe(false);
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+  });
+
   describe('createBeneficiary', () => {
     it('should create beneficiary with user', async () => {
       const userData = { username: 'beneficiary', credentials: 'password123' };
@@ -241,23 +370,23 @@ describe('UserService', () => {
       const mockUser = { userId: 1, username: 'beneficiary' };
       const mockBeneficiary = { beneficiaryId: 1, ...beneficiaryData, user: mockUser };
 
-      // Mock query runner
-      const mockQueryRunner = {
-        connect: jest.fn(),
-        startTransaction: jest.fn(),
-        manager: {
-          getRepository: jest.fn().mockReturnValue({
-            create: jest.fn().mockReturnValue(mockUser),
-            save: jest.fn().mockResolvedValue(mockUser)
-          }),
-          save: jest.fn().mockResolvedValue(mockBeneficiary)
-        },
-        commitTransaction: jest.fn(),
-        rollbackTransaction: jest.fn(),
-        release: jest.fn()
+      // Mock the manager methods
+      const mockUserRepo = {
+        create: jest.fn().mockReturnValue(mockUser),
+        save: jest.fn().mockResolvedValue(mockUser)
+      };
+      const mockBeneficiaryRepo = {
+        create: jest.fn().mockReturnValue(mockBeneficiary),
+        save: jest.fn().mockResolvedValue(mockBeneficiary)
       };
 
-      (AppDataSource.createQueryRunner as jest.Mock).mockReturnValue(mockQueryRunner);
+      mockQueryRunner.manager.findOne.mockResolvedValue(null); // No existing user
+      mockQueryRunner.manager.getRepository
+        .mockReturnValueOnce(mockUserRepo)
+        .mockReturnValueOnce(mockBeneficiaryRepo);
+      mockQueryRunner.manager.save
+        .mockResolvedValueOnce(mockUser)
+        .mockResolvedValueOnce(mockBeneficiary);
 
       const result = await userService.createBeneficiary(userData, beneficiaryData);
 
@@ -267,13 +396,23 @@ describe('UserService', () => {
       expect(mockQueryRunner.release).toHaveBeenCalled();
       expect(result).toEqual(mockBeneficiary);
     });
+
+    it('should throw error if username already exists', async () => {
+      const userData = { username: 'existinguser', credentials: 'password123' };
+      const beneficiaryData = { discountCategory: 'GENERAL', discount: 0.1 };
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({ userId: 1, username: 'existinguser' });
+
+      await expect(userService.createBeneficiary(userData, beneficiaryData))
+        .rejects.toThrow('Username already exists');
+    });
   });
 
   describe('getAllRoles', () => {
     it('should return all roles with permissions', async () => {
       const mockRoles = [
-        { roleId: 1, roleName: 'ADMIN' },
-        { roleId: 2, roleName: 'USER' }
+        { roleId: 1, roleName: 'ADMIN', permissions: [] },
+        { roleId: 2, roleName: 'USER', permissions: [] }
       ];
 
       mockRoleRepository.find.mockResolvedValue(mockRoles);
@@ -289,7 +428,7 @@ describe('UserService', () => {
 
   describe('createRole', () => {
     it('should create new role', async () => {
-      const roleData = { roleName: 'NEW_ROLE', description: 'New role description' };
+      const roleData = { roleName: 'NEW_ROLE', description: 'New role' };
       const mockRole = { roleId: 1, ...roleData };
 
       mockRoleRepository.create.mockReturnValue(mockRole);
@@ -315,6 +454,8 @@ describe('UserService', () => {
       const result = await userService.updateRole(1, updateData);
 
       expect(result).toEqual(updatedRole);
+      expect(mockRoleRepository.findOneBy).toHaveBeenCalledWith({ roleId: 1 });
+      expect(mockRoleRepository.save).toHaveBeenCalled();
     });
 
     it('should return null if role not found', async () => {
@@ -333,6 +474,7 @@ describe('UserService', () => {
       const result = await userService.deleteRole(1);
 
       expect(result).toBe(true);
+      expect(mockRoleRepository.delete).toHaveBeenCalledWith(1);
     });
 
     it('should return false if role not found', async () => {

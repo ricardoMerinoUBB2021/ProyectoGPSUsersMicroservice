@@ -22,13 +22,10 @@ export class UserService {
     this.personRepository = AppDataSource.getRepository(Person);
   }
 
-  async findAllUsers(page: number = 1, limit: number = 10): Promise<{ users: User[], total: number }> {
-    const [users, total] = await this.userRepository.findAndCount({
-      skip: (page - 1) * limit,
-      take: limit,
+  async findAllUsers(): Promise<User[]> {
+    return this.userRepository.find({
       relations: ['roles', 'beneficiary']
     });
-    return { users, total };
   }
 
   async findUserById(userId: number): Promise<User | null> {
@@ -46,6 +43,14 @@ export class UserService {
   }
 
   async createUser(userData: Partial<User>): Promise<User> {
+    // Check if username already exists
+    if (userData.username) {
+      const existingUser = await this.findUserByUsername(userData.username);
+      if (existingUser) {
+        throw new Error('Username already exists');
+      }
+    }
+
     // Hash password if provided
     if (userData.credentials) {
       const salt = await bcrypt.genSalt(10);
@@ -80,8 +85,38 @@ export class UserService {
   }
 
   async deleteUser(userId: number): Promise<boolean> {
-    const result = await this.userRepository.delete(userId);
-    return result.affected === 1;
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    
+    try {
+      // Check if user exists
+      const user = await queryRunner.manager.findOne(User, {
+        where: { userId },
+        relations: ['beneficiary']
+      });
+      
+      if (!user) {
+        await queryRunner.rollbackTransaction();
+        return false;
+      }
+
+      // If user has a beneficiary, delete it first
+      if (user.beneficiary) {
+        await queryRunner.manager.delete(Beneficiary, user.beneficiary.beneficiaryId);
+      }
+
+      // Delete the user
+      const result = await queryRunner.manager.delete(User, userId);
+      
+      await queryRunner.commitTransaction();
+      return result.affected === 1;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // Beneficiary specific methods
@@ -92,12 +127,79 @@ export class UserService {
     });
   }
 
+  async getAllBeneficiaries(): Promise<Beneficiary[]> {
+    return this.beneficiaryRepository.find({
+      relations: ['user']
+    });
+  }
+
+  async updateBeneficiary(beneficiaryId: number, beneficiaryData: Partial<Beneficiary>): Promise<Beneficiary | null> {
+    // Check if beneficiary exists
+    const beneficiary = await this.beneficiaryRepository.findOne({
+      where: { beneficiaryId },
+      relations: ['user']
+    });
+    
+    if (!beneficiary) {
+      return null;
+    }
+
+    // Update and save
+    Object.assign(beneficiary, beneficiaryData);
+    return this.beneficiaryRepository.save(beneficiary);
+  }
+
+  async deleteBeneficiary(beneficiaryId: number): Promise<boolean> {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    
+    try {
+      // Check if beneficiary exists
+      const beneficiary = await queryRunner.manager.findOne(Beneficiary, {
+        where: { beneficiaryId },
+        relations: ['user']
+      });
+      
+      if (!beneficiary) {
+        await queryRunner.rollbackTransaction();
+        return false;
+      }
+
+      // Delete the beneficiary first
+      await queryRunner.manager.delete(Beneficiary, beneficiaryId);
+      
+      // Delete the associated user
+      if (beneficiary.user) {
+        await queryRunner.manager.delete(User, beneficiary.user.userId);
+      }
+      
+      await queryRunner.commitTransaction();
+      return true;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async createBeneficiary(userData: Partial<User>, beneficiaryData: Partial<Beneficiary>): Promise<Beneficiary> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     
     try {
+      // Check if username already exists
+      if (userData.username) {
+        const existingUser = await queryRunner.manager.findOne(User, {
+          where: { username: userData.username }
+        });
+        if (existingUser) {
+          throw new Error('Username already exists');
+        }
+      }
+
       // Hash password if provided
       if (userData.credentials) {
         const salt = await bcrypt.genSalt(10);
