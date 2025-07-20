@@ -1,9 +1,9 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
-import { Usuario } from '../entities/user.entity';
-import { Rol } from '../entities/role.entity';
-import { Permiso } from '../entities/permission.entity';
-import { Beneficiario } from '../entities/beneficiary.entity';
+import { User } from '../entities/user.entity';
+import { Role } from '../entities/role.entity';
+import { Permission } from '../entities/permission.entity';
+import { Beneficiary } from '../entities/beneficiary.entity';
 
 // Load environment variables
 config();
@@ -25,7 +25,7 @@ const AppDataSource = new DataSource({
     database: process.env.DB_NAME,
     synchronize: false,
     logging: true,
-    entities: [Usuario, Rol, Permiso, Beneficiario],
+    entities: [User, Role, Permission, Beneficiary],
     migrations: ['src/migrations/**/*.ts'],
     ssl: {
         rejectUnauthorized: false

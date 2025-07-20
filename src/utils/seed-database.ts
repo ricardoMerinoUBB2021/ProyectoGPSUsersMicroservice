@@ -105,7 +105,7 @@ export async function seedDatabase() {
         username: 'admin',
         credentials: hashedPassword,
         salt: salt,
-        roles: [adminRole]
+        roles: adminRole ? [adminRole] : []
       });
       
       adminUser = await userRepository.save(adminUser);
