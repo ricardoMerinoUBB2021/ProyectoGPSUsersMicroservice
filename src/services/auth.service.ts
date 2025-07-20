@@ -37,7 +37,7 @@ export class AuthService {
         }
 
         // Verify password using salt
-        const isPasswordValid = await bcrypt.compare(password + user.salt, user.credentials);
+        const isPasswordValid = await bcrypt.compare(password, user.credentials);
         
         if (!isPasswordValid) {
             return null;
