@@ -41,8 +41,9 @@ describe('AuthService', () => {
           {
             roleId: 1,
             roleName: 'ADMIN',
+            description: 'Administrator role',
             permissions: [
-              { permissionsId: 1, permissionName: 'user:read' }
+              { permissionsId: 1, permissionName: 'user:read', description: 'Read user information' }
             ]
           }
         ],
@@ -111,15 +112,17 @@ describe('AuthService', () => {
           {
             roleId: 1,
             roleName: 'ADMIN',
+            description: 'Administrator role',
             permissions: [
-              { permissionsId: 1, permissionName: 'user:read' }
+              { permissionsId: 1, permissionName: 'user:read', description: 'Read user information' }
             ]
           }
         ],
         beneficiary: {
           beneficiaryId: 1,
           discountCategory: 'GENERAL',
-          discount: 0.1
+          discount: 0.1,
+          user: null
         }
       };
 
@@ -214,7 +217,7 @@ describe('AuthService', () => {
 
   describe('hasPermission', () => {
     it('should return true if user has required permission', () => {
-      const mockUser: User = {
+      const mockUser = {
         userId: 1,
         username: 'testuser',
         credentials: 'hashedPassword',
@@ -223,14 +226,15 @@ describe('AuthService', () => {
           {
             roleId: 1,
             roleName: 'ADMIN',
+            description: 'Administrator role',
             permissions: [
-              { permissionsId: 1, permissionName: 'user:read' },
-              { permissionsId: 2, permissionName: 'user:write' }
+              { permissionsId: 1, permissionName: 'user:read', description: 'Read user information' },
+              { permissionsId: 2, permissionName: 'user:write', description: 'Write user information' }
             ]
           }
         ],
         beneficiary: null
-      } as User;
+      } as any;
 
       const result = authService.hasPermission(mockUser, 'user:read');
 
@@ -238,7 +242,7 @@ describe('AuthService', () => {
     });
 
     it('should return true if user has permission in multiple roles', () => {
-      const mockUser: User = {
+      const mockUser = {
         userId: 1,
         username: 'testuser',
         credentials: 'hashedPassword',
@@ -247,20 +251,22 @@ describe('AuthService', () => {
           {
             roleId: 1,
             roleName: 'ADMIN',
+            description: 'Administrator role',
             permissions: [
-              { permissionsId: 1, permissionName: 'user:read' }
+              { permissionsId: 1, permissionName: 'user:read', description: 'Read user information' }
             ]
           },
           {
             roleId: 2,
             roleName: 'MODERATOR',
+            description: 'Moderator role',
             permissions: [
-              { permissionsId: 2, permissionName: 'user:write' }
+              { permissionsId: 2, permissionName: 'user:write', description: 'Write user information' }
             ]
           }
         ],
         beneficiary: null
-      } as User;
+      } as any;
 
       const result = authService.hasPermission(mockUser, 'user:write');
 
@@ -268,7 +274,7 @@ describe('AuthService', () => {
     });
 
     it('should return false if user does not have required permission', () => {
-      const mockUser: User = {
+      const mockUser = {
         userId: 1,
         username: 'testuser',
         credentials: 'hashedPassword',
@@ -277,13 +283,14 @@ describe('AuthService', () => {
           {
             roleId: 1,
             roleName: 'USER',
+            description: 'User role',
             permissions: [
-              { permissionsId: 1, permissionName: 'user:read' }
+              { permissionsId: 1, permissionName: 'user:read', description: 'Read user information' }
             ]
           }
         ],
         beneficiary: null
-      } as User;
+      } as any;
 
       const result = authService.hasPermission(mockUser, 'user:delete');
 
@@ -291,14 +298,14 @@ describe('AuthService', () => {
     });
 
     it('should return false if user has no roles', () => {
-      const mockUser: User = {
+      const mockUser = {
         userId: 1,
         username: 'testuser',
         credentials: 'hashedPassword',
         salt: 'salt123',
         roles: [],
         beneficiary: null
-      } as User;
+      } as any;
 
       const result = authService.hasPermission(mockUser, 'user:read');
 
@@ -306,7 +313,7 @@ describe('AuthService', () => {
     });
 
     it('should return false if user roles have no permissions', () => {
-      const mockUser: User = {
+      const mockUser = {
         userId: 1,
         username: 'testuser',
         credentials: 'hashedPassword',
@@ -315,11 +322,12 @@ describe('AuthService', () => {
           {
             roleId: 1,
             roleName: 'USER',
+            description: 'User role',
             permissions: []
           }
         ],
         beneficiary: null
-      } as User;
+      } as any;
 
       const result = authService.hasPermission(mockUser, 'user:read');
 
@@ -342,11 +350,17 @@ describe('AuthService', () => {
 
       const mockUser = {
         userId: 1,
-        ...userData
+        username: 'newuser',
+        credentials: 'hashedPassword',
+        salt: 'salt123',
+        roles: [],
+        beneficiary: null
       };
 
-      mockUserRepository.create.mockReturnValue(mockUser);
-      mockUserRepository.save.mockResolvedValue(mockUser);
+      // Reset mocks to ensure they're properly set up
+      jest.clearAllMocks();
+      mockUserRepository.create = jest.fn().mockReturnValue(mockUser);
+      mockUserRepository.save = jest.fn().mockResolvedValue(mockUser);
 
       const result = await authService.register(userData);
 

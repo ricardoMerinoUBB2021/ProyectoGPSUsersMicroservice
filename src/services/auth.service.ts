@@ -10,9 +10,19 @@ export class AuthService {
         this.userRepository = AppDataSource.getRepository(User);
     }
 
-    public async register(userData: any): Promise<any> {
-        // Logic for registering a new user
-        // Validate user data, hash password, and save to database
+    public async register(userData: any): Promise<User> {
+        // Hash password if provided
+        if (userData.credentials) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(userData.credentials, salt);
+            userData.credentials = hashedPassword;
+            userData.salt = salt;
+        }
+        
+        // Create the user entity
+        const user = this.userRepository.create(userData);
+        const savedUser = await this.userRepository.save(user) as unknown as User;
+        return savedUser;
     }
 
     async login(username: string, password: string): Promise<{ user: Partial<User> } | null> {
@@ -83,8 +93,8 @@ export class AuthService {
     }
 
     // Check if a user has a specific permission through roles
-    hasPermission(user: User, requiredPermission: string): boolean {
-        if (!user.roles) return false;
+    hasPermission(user: User | null, requiredPermission: string): boolean {
+        if (!user || !user.roles) return false;
         
         return user.roles.some(role => 
             role.permissions?.some(permission => 

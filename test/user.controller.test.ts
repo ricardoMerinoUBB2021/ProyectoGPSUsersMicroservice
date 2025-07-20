@@ -44,13 +44,27 @@ describe('UserController', () => {
   describe('getAllUsers', () => {
     it('should return users with pagination', async () => {
       const mockUsers = [
-        { userId: 1, username: 'user1' },
-        { userId: 2, username: 'user2' }
+        { 
+          userId: 1, 
+          username: 'user1',
+          credentials: 'hashedPassword1',
+          salt: 'salt1',
+          roles: [],
+          beneficiary: null
+        },
+        { 
+          userId: 2, 
+          username: 'user2',
+          credentials: 'hashedPassword2',
+          salt: 'salt2',
+          roles: [],
+          beneficiary: null
+        }
       ];
       const mockTotal = 2;
 
       mockRequest.query = { page: '1', limit: '10' };
-      mockUserService.findAllUsers.mockResolvedValue({ users: mockUsers, total: mockTotal });
+      mockUserService.findAllUsers.mockResolvedValue({ users: mockUsers as any, total: mockTotal });
 
       await userController.getAllUsers(mockRequest as Request, mockResponse as Response);
 
@@ -95,10 +109,17 @@ describe('UserController', () => {
 
   describe('getUserById', () => {
     it('should return user by ID', async () => {
-      const mockUser = { userId: 1, username: 'testuser' };
+      const mockUser = { 
+        userId: 1, 
+        username: 'testuser',
+        credentials: 'hashedPassword',
+        salt: 'salt123',
+        roles: [],
+        beneficiary: null
+      };
 
       mockRequest.params = { id: '1' };
-      mockUserService.findUserById.mockResolvedValue(mockUser);
+      mockUserService.findUserById.mockResolvedValue(mockUser as any);
 
       await userController.getUserById(mockRequest as Request, mockResponse as Response);
 
@@ -142,10 +163,17 @@ describe('UserController', () => {
   describe('createUser', () => {
     it('should create new user', async () => {
       const userData = { username: 'newuser', credentials: 'password123' };
-      const mockUser = { userId: 1, ...userData };
+      const mockUser = { 
+        userId: 1, 
+        username: 'newuser',
+        credentials: 'hashedPassword',
+        salt: 'salt123',
+        roles: [],
+        beneficiary: null
+      };
 
       mockRequest.body = userData;
-      mockUserService.createUser.mockResolvedValue(mockUser);
+      mockUserService.createUser.mockResolvedValue(mockUser as any);
 
       await userController.createUser(mockRequest as Request, mockResponse as Response);
 
@@ -177,11 +205,18 @@ describe('UserController', () => {
   describe('updateUser', () => {
     it('should update existing user', async () => {
       const updateData = { username: 'updateduser' };
-      const mockUser = { userId: 1, ...updateData };
+      const mockUser = { 
+        userId: 1, 
+        username: 'updateduser',
+        credentials: 'hashedPassword',
+        salt: 'salt123',
+        roles: [],
+        beneficiary: null
+      };
 
       mockRequest.params = { id: '1' };
       mockRequest.body = updateData;
-      mockUserService.updateUser.mockResolvedValue(mockUser);
+      mockUserService.updateUser.mockResolvedValue(mockUser as any);
 
       await userController.updateUser(mockRequest as Request, mockResponse as Response);
 
@@ -242,10 +277,22 @@ describe('UserController', () => {
     it('should create beneficiary with user', async () => {
       const userData = { username: 'beneficiary', credentials: 'password123' };
       const beneficiaryData = { discountCategory: 'GENERAL', discount: 0.1 };
-      const mockBeneficiary = { beneficiaryId: 1, ...beneficiaryData };
+      const mockBeneficiary = { 
+        beneficiaryId: 1, 
+        discountCategory: 'GENERAL', 
+        discount: 0.1,
+        user: {
+          userId: 1,
+          username: 'beneficiary',
+          credentials: 'hashedPassword',
+          salt: 'salt123',
+          roles: [],
+          beneficiary: null
+        }
+      };
 
       mockRequest.body = { ...userData, ...beneficiaryData };
-      mockUserService.createBeneficiary.mockResolvedValue(mockBeneficiary);
+      mockUserService.createBeneficiary.mockResolvedValue(mockBeneficiary as any);
 
       await userController.createBeneficiary(mockRequest as Request, mockResponse as Response);
 
@@ -262,11 +309,21 @@ describe('UserController', () => {
   describe('getAllRoles', () => {
     it('should return all roles', async () => {
       const mockRoles = [
-        { roleId: 1, roleName: 'ADMIN' },
-        { roleId: 2, roleName: 'USER' }
+        { 
+          roleId: 1, 
+          roleName: 'ADMIN',
+          description: 'Administrator role',
+          permissions: []
+        },
+        { 
+          roleId: 2, 
+          roleName: 'USER',
+          description: 'User role',
+          permissions: []
+        }
       ];
 
-      mockUserService.getAllRoles.mockResolvedValue(mockRoles);
+      mockUserService.getAllRoles.mockResolvedValue(mockRoles as any);
 
       await userController.getAllRoles(mockRequest as Request, mockResponse as Response);
 
@@ -282,10 +339,15 @@ describe('UserController', () => {
   describe('createRole', () => {
     it('should create new role', async () => {
       const roleData = { roleName: 'NEW_ROLE', description: 'New role description' };
-      const mockRole = { roleId: 1, ...roleData };
+      const mockRole = { 
+        roleId: 1, 
+        roleName: 'NEW_ROLE',
+        description: 'New role description',
+        permissions: []
+      };
 
       mockRequest.body = roleData;
-      mockUserService.createRole.mockResolvedValue(mockRole);
+      mockUserService.createRole.mockResolvedValue(mockRole as any);
 
       await userController.createRole(mockRequest as Request, mockResponse as Response);
 
@@ -302,11 +364,16 @@ describe('UserController', () => {
   describe('updateRole', () => {
     it('should update existing role', async () => {
       const updateData = { roleName: 'UPDATED_ROLE' };
-      const mockRole = { roleId: 1, ...updateData };
+      const mockRole = { 
+        roleId: 1, 
+        roleName: 'UPDATED_ROLE',
+        description: 'Updated role description',
+        permissions: []
+      };
 
       mockRequest.params = { id: '1' };
       mockRequest.body = updateData;
-      mockUserService.updateRole.mockResolvedValue(mockRole);
+      mockUserService.updateRole.mockResolvedValue(mockRole as any);
 
       await userController.updateRole(mockRequest as Request, mockResponse as Response);
 
@@ -366,11 +433,19 @@ describe('UserController', () => {
   describe('getAllPermissions', () => {
     it('should return all permissions', async () => {
       const mockPermissions = [
-        { permissionsId: 1, permissionName: 'user:read' },
-        { permissionsId: 2, permissionName: 'user:write' }
+        { 
+          permissionsId: 1, 
+          permissionName: 'user:read',
+          description: 'Read user information'
+        },
+        { 
+          permissionsId: 2, 
+          permissionName: 'user:write',
+          description: 'Create and update users'
+        }
       ];
 
-      mockUserService.getAllPermissions.mockResolvedValue(mockPermissions);
+      mockUserService.getAllPermissions.mockResolvedValue(mockPermissions as any);
 
       await userController.getAllPermissions(mockRequest as Request, mockResponse as Response);
 

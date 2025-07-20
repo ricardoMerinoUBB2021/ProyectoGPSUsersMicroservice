@@ -44,10 +44,15 @@ describe('RolesController', () => {
   describe('createRole', () => {
     it('should create new role', async () => {
       const roleData = { roleName: 'NEW_ROLE', description: 'New role description' };
-      const mockRole = { roleId: 1, ...roleData };
+      const mockRole = { 
+        roleId: 1, 
+        roleName: 'NEW_ROLE', 
+        description: 'New role description',
+        permissions: []
+      };
 
       mockRequest.body = roleData;
-      mockRolesService.createRole.mockResolvedValue(mockRole);
+      mockRolesService.createRole.mockResolvedValue(mockRole as any);
 
       await rolesController.createRole(mockRequest as Request, mockResponse as Response);
 
@@ -79,11 +84,21 @@ describe('RolesController', () => {
   describe('getRoles', () => {
     it('should return all roles', async () => {
       const mockRoles = [
-        { roleId: 1, roleName: 'ADMIN' },
-        { roleId: 2, roleName: 'USER' }
+        { 
+          roleId: 1, 
+          roleName: 'ADMIN',
+          description: 'Administrator role',
+          permissions: []
+        },
+        { 
+          roleId: 2, 
+          roleName: 'USER',
+          description: 'User role',
+          permissions: []
+        }
       ];
 
-      mockRolesService.getRoles.mockResolvedValue(mockRoles);
+      mockRolesService.getRoles.mockResolvedValue(mockRoles as any);
 
       await rolesController.getRoles(mockRequest as Request, mockResponse as Response);
 
@@ -112,10 +127,15 @@ describe('RolesController', () => {
 
   describe('getRoleById', () => {
     it('should return role by ID', async () => {
-      const mockRole = { roleId: 1, roleName: 'ADMIN' };
+      const mockRole = { 
+        roleId: 1, 
+        roleName: 'ADMIN',
+        description: 'Administrator role',
+        permissions: []
+      };
 
       mockRequest.params = { id: '1' };
-      mockRolesService.getRoleById.mockResolvedValue(mockRole);
+      mockRolesService.getRoleById.mockResolvedValue(mockRole as any);
 
       await rolesController.getRoleById(mockRequest as Request, mockResponse as Response);
 
@@ -144,11 +164,16 @@ describe('RolesController', () => {
   describe('updateRole', () => {
     it('should update existing role', async () => {
       const updateData = { roleName: 'UPDATED_ROLE' };
-      const mockRole = { roleId: 1, ...updateData };
+      const mockRole = { 
+        roleId: 1, 
+        roleName: 'UPDATED_ROLE',
+        description: 'Updated role description',
+        permissions: []
+      };
 
       mockRequest.params = { id: '1' };
       mockRequest.body = updateData;
-      mockRolesService.updateRole.mockResolvedValue(mockRole);
+      mockRolesService.updateRole.mockResolvedValue(mockRole as any);
 
       await rolesController.updateRole(mockRequest as Request, mockResponse as Response);
 

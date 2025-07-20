@@ -249,7 +249,8 @@ describe('UserService', () => {
           getRepository: jest.fn().mockReturnValue({
             create: jest.fn().mockReturnValue(mockUser),
             save: jest.fn().mockResolvedValue(mockUser)
-          })
+          }),
+          save: jest.fn().mockResolvedValue(mockBeneficiary)
         },
         commitTransaction: jest.fn(),
         rollbackTransaction: jest.fn(),
@@ -264,6 +265,7 @@ describe('UserService', () => {
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(result).toEqual(mockBeneficiary);
     });
   });
 
