@@ -1,16 +1,13 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('permisos')
-export class Permiso {
-  @PrimaryColumn()
-  codigo: string;
+@Entity('permissions')
+export class Permission {
+  @PrimaryGeneratedColumn({ name: 'permissionsid' })
+  permissionsId: number;
 
-  @Column()
-  nombre: string;
+  @Column({ name: 'permissionname' })
+  permissionName: string;
 
   @Column({ nullable: true })
-  descripcion: string;
-
-  @Column()
-  modulo: string;
+  description: string;
 } 

@@ -1,49 +1,18 @@
 import { Entity, Column, OneToOne, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
-import { Usuario, TipoUsuario } from './user.entity';
+import { User } from './user.entity';
 
-export interface Receta {
-  id: string;
-  beneficiarioId: string;
-  medicoNombre: string;
-  medicoRut: string;
-  fechaEmision: string;
-  fechaVencimiento: string;
-  productos: Array<{
-    codigo: string;
-    nombre: string;
-    cantidad: number;
-    indicaciones: string;
-    periodoDispensacion: number;
-  }>;
-  activa: boolean;
-}
+@Entity('beneficiary')
+export class Beneficiary {
+  @PrimaryGeneratedColumn({ name: 'beneficiaryid' })
+  beneficiaryId: number;
 
-export interface HistorialCompra {
-  id: string;
-  fecha: Date;
-  producto: string;
-  cantidad: number;
-  total: number;
-}
+  @Column({ name: 'discountcategory' })
+  discountCategory: string;
 
-@Entity('beneficiarios')
-export class Beneficiario {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @Column({ type: 'real', nullable: true })
+  discount: number;
 
-  @OneToOne(() => Usuario)
-  @JoinColumn({ name: 'id' })
-  usuario: Usuario;
-
-  @Column({ name: 'categoria_descuento' })
-  categoriaDescuento: string;
-
-  @Column({ name: 'observaciones_medicas', nullable: true })
-  observacionesMedicas: string;
-
-  @Column({ name: 'recetas', type: 'jsonb', nullable: true })
-  recetas: Receta[];
-
-  @Column({ name: 'historial_compras', type: 'jsonb', nullable: true })
-  historialCompras: HistorialCompra[];
+  @OneToOne(() => User, user => user.beneficiary)
+  @JoinColumn({ name: 'userid' })
+  user: User;
 } 

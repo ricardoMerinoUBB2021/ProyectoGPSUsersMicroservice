@@ -1,22 +1,28 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
+import { Permission } from './permission.entity';
 
 @Entity('roles')
-export class Rol {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export class Role {
+  @PrimaryGeneratedColumn({ name: 'roleid' })
+  roleId: number;
 
-  @Column({ unique: true })
-  nombre: string;
+  @Column({ name: 'rolename', unique: true })
+  roleName: string;
 
   @Column({ nullable: true })
-  descripcion: string;
+  description: string;
 
-  @Column('text', { array: true })
-  permisos: string[];
-
-  @Column({ name: 'creado_por' })
-  creadoPor: string;
-
-  @Column({ name: 'fecha_creacion', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  fechaCreacion: string;
+  @ManyToMany(() => Permission)
+  @JoinTable({
+    name: 'roles_permissions',
+    joinColumn: {
+      name: 'rolesid',
+      referencedColumnName: 'roleId'
+    },
+    inverseJoinColumn: {
+      name: 'permissionsid',
+      referencedColumnName: 'permissionsId'
+    }
+  })
+  permissions: Permission[];
 } 

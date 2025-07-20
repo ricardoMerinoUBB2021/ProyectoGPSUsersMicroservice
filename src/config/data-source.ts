@@ -1,8 +1,9 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { Usuario } from '../entities/user.entity';
-import { Beneficiario } from '../entities/beneficiary.entity';
-import { Rol } from '../entities/role.entity';
-import { Permiso } from '../entities/permission.entity';
+import { User } from '../entities/user.entity';
+import { Beneficiary } from '../entities/beneficiary.entity';
+import { Role } from '../entities/role.entity';
+import { Permission } from '../entities/permission.entity';
+import { Person } from '../entities/person.entity';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -20,7 +21,7 @@ const postgresConfig: DataSourceOptions = {
   database: process.env.DB_NAME,
   synchronize: false, // Turn off auto-synchronization to prevent schema conflicts
   logging: isDevelopment,
-  entities: [Usuario, Beneficiario, Rol, Permiso],
+  entities: [User, Beneficiary, Role, Permission, Person],
   migrations: ['../migrations/**/*.ts'],
   subscribers: [],
   ssl: {

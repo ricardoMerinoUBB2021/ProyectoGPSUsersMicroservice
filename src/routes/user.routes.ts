@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/user.controller';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
-import { TipoUsuario } from '../entities/user.entity';
 
 export class UserRoutes {
   private router: Router;
@@ -32,37 +31,25 @@ export class UserRoutes {
     this.router.post(
       '/usuarios',
       //this.authMiddleware.verifyToken,
-      //this.authMiddleware.hasRole([TipoUsuario.ADMIN]),
+      //this.authMiddleware.hasRole(['ADMIN']),
       this.userController.createUser
     );
 
     this.router.put(
       '/usuarios/:id',
       //this.authMiddleware.verifyToken,
-      //this.authMiddleware.hasRole([TipoUsuario.ADMIN]),
+      //this.authMiddleware.hasRole(['ADMIN']),
       this.userController.updateUser
     );
 
     this.router.delete(
       '/usuarios/:id',
       //this.authMiddleware.verifyToken,
-      //this.authMiddleware.hasRole([TipoUsuario.ADMIN]),
+      //this.authMiddleware.hasRole(['ADMIN']),
       this.userController.deleteUser
     );
 
     // Beneficiary specific routes
-    this.router.get(
-      '/beneficiarios/:id/historial',
-      //this.authMiddleware.verifyToken,
-      this.userController.getBeneficiaryHistory
-    );
-
-    this.router.get(
-      '/beneficiarios/:id/recetas',
-      //this.authMiddleware.verifyToken,
-      this.userController.getBeneficiaryPrescriptions
-    );
-
     this.router.post(
       '/beneficiarios',
       //this.authMiddleware.verifyToken,
@@ -79,21 +66,21 @@ export class UserRoutes {
     this.router.post(
       '/roles',
       //this.authMiddleware.verifyToken,
-      //this.authMiddleware.hasRole([TipoUsuario.ADMIN]),
+      //this.authMiddleware.hasRole(['ADMIN']),
       this.userController.createRole
     );
 
     this.router.put(
       '/roles/:id',
       //this.authMiddleware.verifyToken,
-      //this.authMiddleware.hasRole([TipoUsuario.ADMIN]),
+      //this.authMiddleware.hasRole(['ADMIN']),
       this.userController.updateRole
     );
 
     this.router.delete(
       '/roles/:id',
       //this.authMiddleware.verifyToken,
-      //this.authMiddleware.hasRole([TipoUsuario.ADMIN]),
+      //this.authMiddleware.hasRole(['ADMIN']),
       this.userController.deleteRole
     );
 

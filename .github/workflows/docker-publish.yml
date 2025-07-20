@@ -30,8 +30,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup test environment
+        run: |
+          echo "Setting up test environment variables..."
+          echo "NODE_ENV=test" >> $GITHUB_ENV
+
       - name: Run tests
-        run: npm test
+        run: npm run test:ci
+        env:
+          NODE_ENV: test
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+      - name: Build TypeScript
+        run: npm run build
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -56,4 +72,6 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }} 
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NODE_ENV=production 

@@ -1,29 +1,44 @@
+import { Repository } from 'typeorm';
+import AppDataSource from '../config/data-source';
+import { Role } from '../entities/role.entity';
+
 export class RolesService {
-    private roles: Role[] = [];
+    private roleRepository: Repository<Role>;
 
-    public createRole(name: string): Role {
-        const newRole: Role = {
-            id: this.generateId(),
-            name: name
-        };
-        this.roles.push(newRole);
-        return newRole;
+    constructor() {
+        this.roleRepository = AppDataSource.getRepository(Role);
     }
 
-    public getRoles(): Role[] {
-        return this.roles;
+    public async createRole(roleData: Partial<Role>): Promise<Role> {
+        const role = this.roleRepository.create(roleData);
+        return this.roleRepository.save(role);
     }
 
-    public getRoleById(id: string): Role | undefined {
-        return this.roles.find(role => role.id === id);
+    public async getRoles(): Promise<Role[]> {
+        return this.roleRepository.find({
+            relations: ['permissions']
+        });
     }
 
-    private generateId(): string {
-        return (this.roles.length + 1).toString();
+    public async getRoleById(roleId: number): Promise<Role | null> {
+        return this.roleRepository.findOne({
+            where: { roleId },
+            relations: ['permissions']
+        });
     }
-}
 
-interface Role {
-    id: string;
-    name: string;
+    public async updateRole(roleId: number, roleData: Partial<Role>): Promise<Role | null> {
+        const role = await this.roleRepository.findOneBy({ roleId });
+        if (!role) {
+            return null;
+        }
+        
+        Object.assign(role, roleData);
+        return this.roleRepository.save(role);
+    }
+
+    public async deleteRole(roleId: number): Promise<boolean> {
+        const result = await this.roleRepository.delete(roleId);
+        return result.affected === 1;
+    }
 }

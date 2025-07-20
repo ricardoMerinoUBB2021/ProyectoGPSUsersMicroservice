@@ -40,7 +40,8 @@ export class UserController {
   // Get user by ID
   getUserById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const user = await this.userService.findUserById(req.params.id);
+      const userId = parseInt(req.params.id, 10);
+      const user = await this.userService.findUserById(userId);
       
       if (!user) {
         res.status(404).json({
@@ -85,7 +86,8 @@ export class UserController {
   // Update a user
   updateUser = async (req: Request, res: Response): Promise<void> => {
     try {
-      const updatedUser = await this.userService.updateUser(req.params.id, req.body);
+      const userId = parseInt(req.params.id, 10);
+      const updatedUser = await this.userService.updateUser(userId, req.body);
       
       if (!updatedUser) {
         res.status(404).json({
@@ -109,10 +111,11 @@ export class UserController {
     }
   };
 
-  // Delete a user (logical deletion)
+  // Delete a user
   deleteUser = async (req: Request, res: Response): Promise<void> => {
     try {
-      const deleted = await this.userService.deleteUser(req.params.id);
+      const userId = parseInt(req.params.id, 10);
+      const deleted = await this.userService.deleteUser(userId);
       
       if (!deleted) {
         res.status(404).json({
@@ -135,65 +138,23 @@ export class UserController {
     }
   };
 
-  // Get beneficiary history
-  getBeneficiaryHistory = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const history = await this.userService.getBeneficiaryHistory(req.params.id);
-      
-      res.status(200).json({
-        status: 'success',
-        data: { history }
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        status: 'error',
-        message: 'Error al obtener historial',
-        error: error.message || 'Error desconocido'
-      });
-    }
-  };
-
-  // Get beneficiary prescriptions
-  getBeneficiaryPrescriptions = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const prescriptions = await this.userService.getBeneficiaryPrescriptions(req.params.id);
-      
-      res.status(200).json({
-        status: 'success',
-        data: { prescriptions }
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        status: 'error',
-        message: 'Error al obtener recetas',
-        error: error.message || 'Error desconocido'
-      });
-    }
-  };
-
   // Create a beneficiary
   createBeneficiary = async (req: Request, res: Response): Promise<void> => {
     try {
       // Split the request body into user and beneficiary data
       const { 
         // User data
-        rut, nombres, apellidos, fechaNacimiento, direccion, comuna, 
-        telefono, email, activo, credenciales, permisos,
+        username, credentials,
         
         // Beneficiary data
-        categoriaDescuento, observacionesMedicas, recetas, historialCompras
+        discountCategory, discount
       } = req.body;
       
       // Prepare user data
-      const userData = { 
-        rut, nombres, apellidos, fechaNacimiento, direccion, comuna, 
-        telefono, email, activo, credenciales, permisos 
-      };
+      const userData = { username, credentials };
       
       // Prepare beneficiary data
-      const beneficiaryData = {
-        categoriaDescuento, observacionesMedicas, recetas, historialCompras
-      };
+      const beneficiaryData = { discountCategory, discount };
       
       // Create both user and beneficiary in a transaction
       const newBeneficiary = await this.userService.createBeneficiary(userData, beneficiaryData);
@@ -250,7 +211,8 @@ export class UserController {
 
   updateRole = async (req: Request, res: Response): Promise<void> => {
     try {
-      const updatedRole = await this.userService.updateRole(req.params.id, req.body);
+      const roleId = parseInt(req.params.id, 10);
+      const updatedRole = await this.userService.updateRole(roleId, req.body);
       
       if (!updatedRole) {
         res.status(404).json({
@@ -276,7 +238,8 @@ export class UserController {
 
   deleteRole = async (req: Request, res: Response): Promise<void> => {
     try {
-      const deleted = await this.userService.deleteRole(req.params.id);
+      const roleId = parseInt(req.params.id, 10);
+      const deleted = await this.userService.deleteRole(roleId);
       
       if (!deleted) {
         res.status(404).json({
@@ -299,7 +262,7 @@ export class UserController {
     }
   };
 
-  // Permission management
+  // Permission management endpoints
   getAllPermissions = async (req: Request, res: Response): Promise<void> => {
     try {
       const permissions = await this.userService.getAllPermissions();

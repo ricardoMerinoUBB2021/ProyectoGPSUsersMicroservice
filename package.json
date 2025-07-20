@@ -14,7 +14,12 @@
     "seed": "ts-node src/utils/seed-database.ts",
     "init:db": "ts-node src/utils/init-database.ts",
     "init:db:postgres": "psql -U $DB_USER -d $DB_NAME -h $DB_HOST -f src/config/init-database.sql",
-    "test": "jest --coverage"
+    "test": "jest --coverage --verbose",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --coverage --ci --watchAll=false",
+    "test:unit": "jest --testPathPattern=test/.*\\.test\\.ts --coverage",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",

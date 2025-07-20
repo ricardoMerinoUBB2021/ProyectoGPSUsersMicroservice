@@ -2,71 +2,42 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
-  OneToMany,
+  ManyToMany,
+  JoinTable,
+  OneToOne,
   JoinColumn
 } from 'typeorm';
+import { Role } from './role.entity';
+import { Beneficiary } from './beneficiary.entity';
 
-export enum TipoUsuario {
-  BENEFICIARIO = 'BENEFICIARIO',
-  ADMIN = 'ADMIN',
-  FARMACEUTICO = 'FARMACEUTICO',
-  CAJERO = 'CAJERO',
-  VENDEDOR = 'VENDEDOR',
-  ADMIN_INVENTARIO = 'ADMIN_INVENTARIO'
-}
-
-@Entity('usuarios')
-export class Usuario {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+@Entity('users')
+export class User {
+  @PrimaryGeneratedColumn({ name: 'userid' })
+  userId: number;
 
   @Column({ unique: true })
-  rut: string;
+  username: string;
 
   @Column()
-  nombres: string;
+  credentials: string;
 
   @Column()
-  apellidos: string;
+  salt: string;
 
-  @Column({ type: 'date' })
-  fechaNacimiento: string;
-
-  @Column()
-  direccion: string;
-
-  @Column()
-  comuna: string;
-
-  @Column()
-  telefono: string;
-
-  @Column({ unique: true })
-  email: string;
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  fechaRegistro: string;
-
-  @Column({ default: true })
-  activo: boolean;
-
-  @Column({
-    type: 'enum',
-    enum: TipoUsuario,
-    default: TipoUsuario.BENEFICIARIO
+  @ManyToMany(() => Role)
+  @JoinTable({
+    name: 'users_roles',
+    joinColumn: {
+      name: 'usersid',
+      referencedColumnName: 'userId'
+    },
+    inverseJoinColumn: {
+      name: 'rolesid',
+      referencedColumnName: 'roleId'
+    }
   })
-  tipo: TipoUsuario;
+  roles: Role[];
 
-  @Column({ type: 'jsonb' })
-  credenciales: {
-    username: string;
-    passwordHash: string;
-    ultimoAcceso: string;
-    intentosFallidos: number;
-    bloqueado: boolean;
-  };
-
-  @Column('text', { array: true })
-  permisos: string[];
+  @OneToOne(() => Beneficiary, beneficiary => beneficiary.user)
+  beneficiary: Beneficiary;
 } 
