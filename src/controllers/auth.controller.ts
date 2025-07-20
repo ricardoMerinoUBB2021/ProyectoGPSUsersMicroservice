@@ -45,9 +45,9 @@ export class AuthController {
   // User login
   login = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { username, password } = req.body;
+      const { username, credentials } = req.body;
       
-      if (!username || !password) {
+      if (!username || !credentials) {
         res.status(400).json({
           status: 'error',
           message: 'Se requiere nombre de usuario y contraseña'
@@ -55,7 +55,7 @@ export class AuthController {
         return;
       }
       
-      const result = await this.authService.login(username, password);
+      const result = await this.authService.login(username, credentials);
       
       if (!result) {
         res.status(401).json({

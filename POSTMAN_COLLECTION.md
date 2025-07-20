@@ -57,7 +57,7 @@ Authenticate user and get access token.
 ```json
 {
   "username": "admin",
-  "password": "admin123"
+  "credentials": "admin123"
 }
 ```
 
