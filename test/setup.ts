@@ -31,6 +31,17 @@ if (process.env.NODE_ENV === 'test') {
   console.warn = jest.fn();
 }
 
+// Declare global types
+declare global {
+  var testUtils: {
+    createMockUser: (overrides?: any) => any;
+    createMockRole: (overrides?: any) => any;
+    createMockPermission: (overrides?: any) => any;
+    createMockBeneficiary: (overrides?: any) => any;
+    createMockPerson: (overrides?: any) => any;
+  };
+}
+
 // Global test utilities
 global.testUtils = {
   // Helper to create mock user data

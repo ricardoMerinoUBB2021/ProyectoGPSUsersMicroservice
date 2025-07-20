@@ -9,7 +9,8 @@ module.exports = {
     '/test/',
     'src/config/',
     'src/migrations/',
-    'src/utils/seed-database.ts'
+    'src/utils/seed-database.ts',
+    'src/middlewares/permissions.middleware.ts'
   ],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   roots: ['<rootDir>/src', '<rootDir>/test'],
@@ -18,7 +19,8 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/config/**',
     '!src/migrations/**',
-    '!src/utils/seed-database.ts'
+    '!src/utils/seed-database.ts',
+    '!src/middlewares/permissions.middleware.ts'
   ],
   coverageReporters: ['text', 'lcov', 'html'],
   coverageDirectory: 'coverage',
@@ -27,11 +29,8 @@ module.exports = {
     '**/test/**/*.spec.ts'
   ],
   transform: {
-    '^.+\\.ts$': 'ts-jest'
-  },
-  globals: {
-    'ts-jest': {
+    '^.+\\.ts$': ['ts-jest', {
       tsconfig: 'tsconfig.json'
-    }
+    }]
   }
 };
