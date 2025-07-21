@@ -12,6 +12,17 @@ export class UserRoutes {
   }
 
   private initializeRoutes(): void {
+    // Authentication routes (public)
+    this.router.post(
+      '/usuarios/login',
+      this.userController.login
+    );
+
+    this.router.post(
+      '/usuarios/register',
+      this.userController.register
+    );
+
     // Regular user routes
     this.router.get(
       '/usuarios',

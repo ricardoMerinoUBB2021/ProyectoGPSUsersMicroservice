@@ -261,4 +261,76 @@ export class UserController {
       });
     }
   };
+
+  // User login
+  login = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        res.status(400).json({
+          status: 'error',
+          message: 'Se requiere nombre de usuario y contraseña'
+        });
+        return;
+      }
+      
+      const result = await this.userService.login(username, password);
+      
+      if (!result) {
+        res.status(401).json({
+          status: 'error',
+          message: 'Usuario o contraseña incorrectos'
+        });
+        return;
+      }
+      
+      res.status(200).json({
+        status: 'success',
+        message: 'Inicio de sesión exitoso',
+        token: result.token,
+        user: result.user
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: 'error',
+        message: 'Error en el servidor',
+        error: error.message || 'Error desconocido'
+      });
+    }
+  };
+
+  // User registration
+  register = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        res.status(400).json({
+          status: 'error',
+          message: 'Se requiere nombre de usuario y contraseña'
+        });
+        return;
+      }
+      
+      const user = await this.userService.register({ username, credentials: password });
+      
+      res.status(201).json({
+        status: 'success',
+        message: 'Usuario registrado exitosamente',
+        data: {
+          user: {
+            userId: user.userId,
+            username: user.username
+          }
+        }
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        status: 'error',
+        message: 'Error al registrar usuario',
+        error: error.message || 'Error desconocido'
+      });
+    }
+  };
 }; 

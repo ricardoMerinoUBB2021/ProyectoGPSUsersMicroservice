@@ -280,4 +280,76 @@ export class UserService {
     const person = this.personRepository.create(personData);
     return this.personRepository.save(person);
   }
+
+  // Authentication methods
+  async login(username: string, password: string): Promise<{ user: Partial<User>; token: string } | null> {
+    // Find user by username
+    const user = await this.userRepository.findOne({
+      where: { username },
+      relations: ['roles', 'beneficiary']
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    // Verify password - check if salt is used in the stored password
+    let isPasswordValid = false;
+    if (user.salt) {
+      // If salt exists, compare with password + salt (as in seed file)
+      isPasswordValid = await bcrypt.compare(password + user.salt, user.credentials);
+    } else {
+      // If no salt, compare directly
+      isPasswordValid = await bcrypt.compare(password, user.credentials);
+    }
+    
+    if (!isPasswordValid) {
+      return null;
+    }
+
+    // Return user info without sensitive data and generate token
+    const { credentials, salt, ...userWithoutCredentials } = user;
+    
+    // Generate a simple JWT token (you might want to use a proper JWT library)
+    const token = this.generateToken(userWithoutCredentials);
+    
+    return {
+      user: userWithoutCredentials,
+      token
+    };
+  }
+
+  async register(userData: { username: string; credentials: string }): Promise<User> {
+    // Check if username already exists
+    const existingUser = await this.findUserByUsername(userData.username);
+    if (existingUser) {
+      throw new Error('Username already exists');
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(userData.credentials, salt);
+    
+    // Create the user entity
+    const user = this.userRepository.create({
+      username: userData.username,
+      credentials: hashedPassword,
+      salt: salt
+    });
+    
+    return this.userRepository.save(user);
+  }
+
+  private generateToken(user: Partial<User>): string {
+    // This is a simple token generation. In production, use a proper JWT library
+    const payload = {
+      userId: user.userId,
+      username: user.username,
+      roles: user.roles?.map(role => role.roleName) || []
+    };
+    
+    // Simple base64 encoding for demo purposes
+    // In production, use jsonwebtoken library
+    return Buffer.from(JSON.stringify(payload)).toString('base64');
+  }
 } 
