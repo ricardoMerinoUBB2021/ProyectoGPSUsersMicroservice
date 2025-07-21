@@ -54,7 +54,7 @@ export class UserService {
     // Hash password if provided
     if (userData.credentials) {
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(userData.credentials, salt);
+      const hashedPassword = await bcrypt.hash(userData.credentials + salt, 10);
       userData.credentials = hashedPassword;
       userData.salt = salt;
     }
@@ -74,7 +74,7 @@ export class UserService {
     // Hash password if updated
     if (userData.credentials) {
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(userData.credentials, salt);
+      const hashedPassword = await bcrypt.hash(userData.credentials + salt, 10);
       userData.credentials = hashedPassword;
       userData.salt = salt;
     }
@@ -203,7 +203,7 @@ export class UserService {
       // Hash password if provided
       if (userData.credentials) {
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(userData.credentials, salt);
+        const hashedPassword = await bcrypt.hash(userData.credentials + salt, 10);
         userData.credentials = hashedPassword;
         userData.salt = salt;
       }
@@ -326,9 +326,9 @@ export class UserService {
       throw new Error('Username already exists');
     }
 
-    // Hash password
+    // Hash password with salt (consistent with login)
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(userData.credentials, salt);
+    const hashedPassword = await bcrypt.hash(userData.credentials + salt, 10);
     
     // Create the user entity
     const user = this.userRepository.create({
